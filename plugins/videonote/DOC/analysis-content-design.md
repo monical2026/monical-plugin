@@ -74,3 +74,8 @@ analysis.ts 的 resolveAnalysis、AnalysisDetails、ContentViews 为同一输入
 | DOC/changelog.md、test-plan.md、test-feedback.md | 版本、回归要求与实际验证证据 |
 
 生成材料、用户案例内容和截图只放已忽略的 artifacts/analysis-v3，不进入提交。
+
+
+### 0.9.6 前置知识复核兼容
+
+复核输出标准仍为 prerequisites 数字索引数组。为兼容模型返回对象，在格式校验之前只将可核实、无歧义的对象还原为索引，原条目正文不采用模型改写。显式 index 必须是有效非负整数，附带 title/description/origin 必须与原条目一致；无 index 时必须三字段完整且唯一匹配。其他字段、正文差异或匹配歧义拒绝，不凭标题或位置猜测。不新增请求，不改变前置知识内容规范与原索引去重校验。
