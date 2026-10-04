@@ -1,3 +1,4 @@
+import { correctCoverage } from './analysis-coverage';
 import { requestReviewPlan } from './analysis-review-request';
 import { reviewStandaloneQuotes } from './quote-review';
 import { applyReviewPlan } from './analysis-review-plan';
@@ -23,7 +24,7 @@ export function reviewMaterial(analysis: Analysis, segments: Segment[]) {
   const evidence = new Set<string>();
   const topics = analysis.topics.map((t) => {
     if (!t.startSegmentId || !t.endSegmentId)
-      throw new Error('请更新本机组件后重新整理，新版脉络需要完整来源');
+      throw new Error('脉络缺少完整来源，请更新插件并重新整理；已有内容未覆盖');
     const start = segments.findIndex((s) => s.id === t.startSegmentId);
     const end = segments.findIndex((s) => s.id === t.endSegmentId);
     // 保留章节首末原话，使合并/拆分不只依赖摘要。
@@ -84,8 +85,10 @@ export async function reviewAnalysis(
   generate: (prompt: string) => Promise<string>,
 ) {
   const material = reviewMaterial(analysis, segments);
-  const input = await requestReviewPlan(material, generate);
-  const result = resolveAnalysis(applyReviewPlan(input, material), segments);
+  const result = await correctCoverage(async (correction) => {
+    const input = await requestReviewPlan(material, generate, correction);
+    return resolveAnalysis(applyReviewPlan(input, material), segments);
+  });
   if (result.formatVersion !== 3)
     throw new Error('全片复核未采用新版结构，已有结果未覆盖');
   // 最终金句必须来自已核验候选；模型不能借复核新增断章取义的原话。

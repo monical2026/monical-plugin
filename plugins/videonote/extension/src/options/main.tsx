@@ -330,6 +330,7 @@ function SettingsApp() {
             </div>
           </section>
           <ModelRouting
+            browserMode={mode === 'browser'}
             settings={settings}
             setSettings={(value) => {
               setSaveResult(null);

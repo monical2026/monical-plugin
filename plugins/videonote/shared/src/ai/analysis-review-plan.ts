@@ -1,3 +1,4 @@
+import { assertTopicCoverage } from './analysis-coverage';
 import { z } from 'zod';
 import type { reviewMaterial } from './analysis-review';
 type Material = ReturnType<typeof reviewMaterial>;
@@ -70,6 +71,7 @@ export function applyReviewPlan(input: unknown, data: Material) {
   if (!parsed.success)
     throw new Error('全片复核计划格式不完整，已有结果未覆盖');
   const plan = parsed.data;
+  assertTopicCoverage(plan.topics, data.segmentCount);
   const seenKnowledge = new Set<number>(),
     seenMethods = new Set<number>();
   return {

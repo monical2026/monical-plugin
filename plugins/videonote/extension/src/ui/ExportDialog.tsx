@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { backend } from '../browser-service/storage';
+import { openBrowserExport } from '../export/browser-export-request';
 import type { Mode, VideoRecord } from '@youtube-note/shared';
 import {
   exportBlocks,
@@ -9,6 +11,8 @@ import {
 import { createDownloadBlob } from '../export/download';
 import { DuplicateExportDialog } from './DuplicateExportDialog';
 import {
+  browserObsidianTarget,
+  sendBrowserObsidian,
   blobDataUrl,
   getObsidianTarget,
   chooseObsidianTarget,
@@ -35,10 +39,37 @@ export function ExportDialog({
   const [format, setFormat] = useState('md'),
     [error, setError] = useState('');
   const [destination, setDestination] = useState('download');
+  const [browserExport, setBrowserExport] = useState(false);
   const [target, setTarget] = useState<ObsidianTarget | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [duplicates, setDuplicates] = useState<string[]>([]);
+  useEffect(() => {
+    if (!browserExport) return;
+    let active = true;
+    const refresh = () => {
+      void browserObsidianTarget()
+        .then((value) => {
+          if (active) setTarget(value);
+        })
+        .catch((e) => {
+          if (active) setError(errorText(e));
+        });
+    };
+    const changed = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area === 'local' && changes.browserObsidianConnection) refresh();
+    };
+    chrome.storage.onChanged.addListener(changed);
+    window.addEventListener('focus', refresh);
+    return () => {
+      active = false;
+      chrome.storage.onChanged.removeListener(changed);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [browserExport]);
   async function chooseTarget() {
     setBusy(true);
     setError('');
@@ -62,7 +93,11 @@ export function ExportDialog({
     if (value !== 'obsidian') return;
     setBusy(true);
     try {
-      setTarget(await getObsidianTarget());
+      const browser = (await backend()) === 'browser';
+      setBrowserExport(browser);
+      setTarget(
+        browser ? await browserObsidianTarget() : await getObsidianTarget(),
+      );
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -76,6 +111,29 @@ export function ExportDialog({
     try {
       const blocks = exportBlocks(record, mode, selected);
       if (destination === 'obsidian') {
+        if (browserExport) {
+          const payload = {
+            videoId: record.videoId,
+            title: record.title,
+            markdown: exportText(blocks, true),
+            copy,
+          };
+          const result = await sendBrowserObsidian(payload);
+          if (result.status === 'authorizationRequired') {
+            await openBrowserExport(payload);
+            setMessage(
+              '请在连接页授权知识库；授权成功后本次内容会直接导入，以后可在这里一键导入。',
+            );
+          } else if (result.status === 'duplicate') {
+            setDuplicates(result.files);
+          } else {
+            setDuplicates([]);
+            setMessage(
+              `已导入 ${target?.folder ?? '知识库'}：${result.filename}`,
+            );
+          }
+          return;
+        }
         const result = await sendToObsidian({
           videoId: record.videoId,
           title: record.title,
@@ -168,7 +226,36 @@ export function ExportDialog({
             Obsidian
           </label>
         </fieldset>
-        {destination === 'obsidian' && (
+        {destination === 'obsidian' && browserExport && (
+          <div className="export-target">
+            <p>
+              {target
+                ? `已连接知识库：${target.folder}`
+                : '首次导入时连接本地知识库，之后直接导入。'}
+            </p>
+            {target && (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  void openBrowserExport(
+                    {
+                      videoId: record.videoId,
+                      title: record.title,
+                      markdown: exportText(
+                        exportBlocks(record, mode, selected),
+                        true,
+                      ),
+                    },
+                    true,
+                  ).catch((e) => setError(errorText(e)));
+                }}
+              >
+                更换知识库
+              </button>
+            )}
+          </div>
+        )}
+        {destination === 'obsidian' && !browserExport && (
           <div className="export-target">
             <p>
               {target
@@ -243,14 +330,18 @@ export function ExportDialog({
             busy ||
             !selected.length ||
             !!duplicates.length ||
-            (destination === 'obsidian' && !target)
+            (destination === 'obsidian' && !browserExport && !target)
           }
           onClick={() => void runExport()}
         >
           {busy
             ? '正在处理…'
             : destination === 'obsidian'
-              ? '导出到 Obsidian'
+              ? browserExport
+                ? target
+                  ? '导入知识库'
+                  : '连接知识库并导入'
+                : '导出到 Obsidian'
               : '下载文件'}
         </button>
         {message && (

@@ -1,3 +1,8 @@
+import {
+  coverageInstruction,
+  assertTopicCoverage,
+  correctCoverage,
+} from './analysis-coverage';
 import { analysisRules } from './analysis-prompt';
 import { planSchema, reviewPlanInstructions } from './analysis-review-plan';
 import type { reviewMaterial } from './analysis-review';
@@ -33,32 +38,41 @@ async function request(
 export async function requestReviewPlan(
   material: Material,
   generate: (prompt: string) => Promise<string>,
+  correction = '',
 ): Promise<unknown> {
   if (JSON.stringify(material).length > 160000)
     throw new Error('全片复核材料超出本版处理范围，已有结果未覆盖');
   if (material.topics.length <= 24 && JSON.stringify(material).length <= 60000)
-    return request(material, generate);
-  // 长片按职责拆分，避免一个请求同时改写章节及大量提炼条目。任一步失败不保存。
-  const chapters = chapterPlan.safeParse(
-    await request(
-      {
-        ...material,
-        knowledge: [],
-        methods: [],
-        quotes: [],
-        prerequisites: [],
-      },
+    return request(
+      material,
       generate,
-      '本轮只复核章节与总结，不处理其他栏目。只输出 {"summary":"简短总结","topics":[章节修订计划]}，不要输出其他字段。',
-    ),
-  );
-  if (!chapters.success)
-    throw new Error('全片章节复核计划格式不完整，已有结果未覆盖');
+      `${coverageInstruction(material.segmentCount)}\n${correction}`,
+    );
+  // 长片按职责拆分，避免一个请求同时改写章节及大量提炼条目。任一步失败不保存。
+  const chapters = await correctCoverage(async (chapterCorrection) => {
+    const parsed = chapterPlan.safeParse(
+      await request(
+        {
+          ...material,
+          knowledge: [],
+          methods: [],
+          quotes: [],
+          prerequisites: [],
+        },
+        generate,
+        `${coverageInstruction(material.segmentCount)}\n${correction}\n${chapterCorrection}\n本轮只复核章节与总结，不处理其他栏目。只输出 {"summary":"简短总结","topics":[章节修订计划]}，不要输出其他字段。`,
+      ),
+    );
+    if (!parsed.success)
+      throw new Error('全片章节复核计划格式不完整，已有结果未覆盖');
+    assertTopicCoverage(parsed.data.topics, material.segmentCount);
+    return parsed.data;
+  });
   const details = detailPlan.safeParse(
     await request(
       {
         ...material,
-        summary: chapters.data.summary,
+        summary: chapters.summary,
         topics: material.topics.map((t) => ({
           title: t.title,
           introduction: t.introduction,
@@ -73,5 +87,5 @@ export async function requestReviewPlan(
   );
   if (!details.success)
     throw new Error('全片提炼条目复核计划格式不完整，已有结果未覆盖');
-  return { ...chapters.data, ...details.data };
+  return { ...chapters, ...details.data };
 }

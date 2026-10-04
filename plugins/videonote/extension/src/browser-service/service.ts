@@ -71,17 +71,22 @@ export async function browserService(
       );
     if (task === 'analyze' || task === 'reviewAnalysis') {
       const payload = parseAnalysisRequest(input);
-      const generate = (prompt: string) =>
-        llm(profile(settings.analyzeProfile, 'llm'), prompt);
-      return analysisProgress(
-        input,
-        profile(settings.analyzeProfile, 'llm'),
-        settings.revision,
-        task,
-        () =>
-          payload.task === 'reviewAnalysis'
-            ? reviewAnalysis(payload.analysis, payload.segments, generate)
-            : analyzeSegments(payload.segments, generate),
+      const selected = settings.profiles.find(
+        (p) => p.id === settings.analyzeProfile && p.kind === 'llm',
+      );
+      if (!selected)
+        throw new Error(
+          '浏览器模式可直接整理脉络：请在设置的“模型分工”中选择“中文摘要与视频脉络”的 API 模型并保存。',
+        );
+      if (selected.connection === 'codex')
+        throw new Error(
+          '当前脉络选中了本机 Codex。浏览器模式请改选 API 模型并保存，无需安装组件。',
+        );
+      const generate = (prompt: string) => llm(selected, prompt);
+      return analysisProgress(input, selected, settings.revision, task, () =>
+        payload.task === 'reviewAnalysis'
+          ? reviewAnalysis(payload.analysis, payload.segments, generate)
+          : analyzeSegments(payload.segments, generate),
       );
     }
     const request = z

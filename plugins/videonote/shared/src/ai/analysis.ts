@@ -1,3 +1,4 @@
+import { correctCoverage, coverageInstruction } from './analysis-coverage';
 import { analysisRules } from './analysis-prompt';
 import {
   validateAnalysisV3,
@@ -17,23 +18,26 @@ export async function analyzeSegments(
   if (!rows.length) throw new Error('没有可分析的逐字稿');
   if (JSON.stringify(rows).length > 30000)
     throw new Error('单批分析内容超出范围，请重新加载新版插件');
-  const prompt = `${analysisRules}\n逐字稿：${JSON.stringify(rows)}`;
-  const text = await generate(prompt);
-  let input: unknown;
-  try {
-    input = JSON.parse(
-      text
-        .trim()
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/, ''),
-    );
-  } catch {
-    throw new Error('AI 梳理未返回有效 JSON，已有内容未覆盖，请重新整理。');
-  }
-  return resolveAnalysis(input, segments);
+  return correctCoverage(async (correction) => {
+    const prompt = `${analysisRules}\n${coverageInstruction(rows.length)}\n${correction}\n逐字稿：${JSON.stringify(rows)}`;
+    const text = await generate(prompt);
+    let input: unknown;
+    try {
+      input = JSON.parse(
+        text
+          .trim()
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/, ''),
+      );
+    } catch {
+      throw new Error('AI 梳理未返回有效 JSON，已有内容未覆盖，请重新整理。');
+    }
+    return resolveAnalysis(input, segments);
+  });
 }
 export function resolveAnalysis(input: unknown, segments: Segment[]) {
   const parsed = parseAnalysisOutput(input);
+  if (parsed.formatVersion === 3) validateAnalysisV3(parsed, segments.length);
   const byId = new Map(
     segments.map((segment, index) => [String(index + 1), segment]),
   );
@@ -139,7 +143,6 @@ export function resolveAnalysis(input: unknown, segments: Segment[]) {
         ),
     ).length;
   if (parsed.formatVersion === 3) {
-    validateAnalysisV3(parsed, segments.length);
     if (topics.length !== parsed.topics.length)
       throw new Error('主题时间范围无效，已有结果未覆盖');
   }

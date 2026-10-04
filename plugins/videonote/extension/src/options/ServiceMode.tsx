@@ -68,8 +68,8 @@ export function ServiceMode({
         </select>
       </label>
       <p className="muted">
-        两种方式分别保存服务配置，不迁移或覆盖已有密钥。切换前请先保存当前设置。Obsidian
-        直接写入和本机 Codex 仍需可选组件。
+        两种方式分别保存服务配置，不迁移或覆盖已有密钥。切换前请先保存当前设置。浏览器模式也支持
+        Obsidian 文件夹授权导出；本机 Codex 仍需可选组件。
       </p>
       {mode === 'browser' && (
         <>

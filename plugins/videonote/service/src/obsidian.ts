@@ -1,3 +1,5 @@
+import { safeTitle } from '../../shared/src/export-filename';
+export { safeTitle } from '../../shared/src/export-filename';
 import { videoIdSchema } from '@youtube-note/shared';
 import {
   mkdir,
@@ -46,17 +48,6 @@ export async function validateTarget(folder: string) {
       );
     ancestor = parent;
   }
-}
-export function safeTitle(title: string) {
-  return (
-    title
-      .split('')
-      .map((char) => (char.charCodeAt(0) < 32 ? '_' : char))
-      .join('')
-      .replace(/[/\\:*?"<>|]/g, '_')
-      .replace(/^[. ]+|[. ]+$/g, '')
-      .slice(0, 65) || '视频学习'
-  );
 }
 export async function writeObsidian(folder: string, input: unknown) {
   const request = exportSchema.parse(input);
