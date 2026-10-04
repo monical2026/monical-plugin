@@ -410,3 +410,8 @@
 ## 脉络修改的必测契约回归
 
 每次调整脉络字段、提示词、批处理或复核流程，必须将 videoActions 实际产生的 analyze/reviewAnalysis 请求送入本机服务使用的同一个解析器，覆盖原文、时间、来源标识、旧记录保留和失败提示。仅用手工构造的服务参数或返回固定成功结果的 RPC mock 不足以验收。真实 Chrome 全链路另行验收。
+
+
+## Windows 兼容专项（0.8.1）
+
+本机原生自检命令与 Chrome 人工验收清单见 [Windows 支持](windows-support.md#windows-专项验证)。Mac 自动化不能替代 Windows 编译、注册与运行结果。

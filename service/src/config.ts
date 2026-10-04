@@ -1,4 +1,4 @@
-import { homedir } from 'node:os';
+import { nativeDirectory } from './platform';
 import { join } from 'node:path';
 import {
   mkdir,
@@ -14,12 +14,7 @@ import {
   defaultSettings,
   type Settings,
 } from '@youtube-note/shared';
-export const configDirectory = join(
-  homedir(),
-  'Library',
-  'Application Support',
-  'YouTubeNote',
-);
+export const configDirectory = nativeDirectory();
 const filename = join(configDirectory, 'settings.json');
 export async function readSettings(): Promise<Settings> {
   try {

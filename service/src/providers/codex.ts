@@ -1,25 +1,9 @@
-import { spawn } from 'node:child_process';
-import { access, mkdir } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { spawn, execFile } from 'node:child_process';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { codexExecutable, codexEnvironment } from './codex-platform';
 import { z } from 'zod';
 import { configDirectory } from '../config';
-async function executable() {
-  for (const path of [
-    join(homedir(), '.local/bin/codex'),
-    '/opt/homebrew/bin/codex',
-    '/usr/local/bin/codex',
-  ]) {
-    try {
-      await access(path, constants.X_OK);
-      return path;
-    } catch {
-      /* 继续检查已知安装位置。 */
-    }
-  }
-  throw new Error('未找到本机 Codex CLI，请先安装并使用 ChatGPT 登录。');
-}
 export function codexArguments(model: string): string[] {
   if (!model) throw new Error('请在设置中选择明确的 Codex 模型');
   if (!/^[a-zA-Z0-9._-]{1,100}$/.test(model))
@@ -69,25 +53,35 @@ async function run(
   input = '',
   timeout = 120000,
 ): Promise<string> {
-  const path = await executable();
+  const path = await codexExecutable();
   const cwd = join(configDirectory, 'codex-work');
   await mkdir(cwd, { recursive: true, mode: 0o700 });
   return new Promise((resolve, reject) => {
     const child = spawn(path, args, {
       cwd,
       shell: false,
-      detached: true,
+      detached: process.platform !== 'win32',
+      windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: {
-        HOME: homedir(),
-        PATH: `${dirname(process.execPath)}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin`,
-        ...(process.env.CODEX_HOME
-          ? { CODEX_HOME: process.env.CODEX_HOME }
-          : {}),
-      },
+      env: codexEnvironment(),
     });
     const stop = () => {
       if (!child.pid) return;
+      if (process.platform === 'win32') {
+        execFile(
+          join(
+            process.env.SystemRoot || 'C:\\Windows',
+            'System32',
+            'taskkill.exe',
+          ),
+          ['/pid', String(child.pid), '/T', '/F'],
+          { windowsHide: true },
+          (error) => {
+            if (error) child.kill();
+          },
+        );
+        return;
+      }
       try {
         process.kill(-child.pid, 'SIGKILL');
       } catch (error) {

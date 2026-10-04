@@ -1,6 +1,4 @@
 import { videoIdSchema } from '@youtube-note/shared';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
   mkdir,
   readFile,
@@ -16,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { configDirectory } from './config';
-const execute = promisify(execFile);
+import { chooseFolder } from './folder-picker';
 const targetSchema = z.object({ folder: z.string(), vault: z.string() });
 const exportSchema = z.object({
   videoId: videoIdSchema,
@@ -108,24 +106,9 @@ export async function writeObsidian(folder: string, input: unknown) {
 export async function obsidian(operation: string, payload: unknown) {
   const settingsFile = join(configDirectory, 'obsidian-target.json');
   if (operation === 'obsidianChoose') {
-    if (process.platform !== 'darwin')
-      throw new Error('当前目录选择仅支持 macOS');
-    let stdout: string;
-    try {
-      ({ stdout } = await execute(
-        '/usr/bin/osascript',
-        [
-          '-e',
-          'POSIX path of (choose folder with prompt "选择 Obsidian 知识库或其中用于存放视频笔记的文件夹")',
-        ],
-        { timeout: 120000, maxBuffer: 16384 },
-      ));
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('-128'))
-        return { cancelled: true };
-      throw new Error('选择文件夹失败或超时，请重试', { cause: error });
-    }
-    const target = await validateTarget(stdout.trim());
+    const folder = await chooseFolder();
+    if (folder === undefined) return { cancelled: true };
+    const target = await validateTarget(folder);
     await mkdir(configDirectory, { recursive: true, mode: 0o700 });
     const temporary = join(configDirectory, `obsidian-${randomUUID()}.tmp`);
     await writeFile(temporary, JSON.stringify(target), { mode: 0o600 });

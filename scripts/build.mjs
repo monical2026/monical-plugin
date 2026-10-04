@@ -2,6 +2,7 @@ import { build } from 'vite';
 import { resolve } from 'node:path';
 import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { buildWindowsNative } from './windows-native.mjs';
 const root = process.cwd();
 const version = JSON.parse(
   await readFile(resolve(root, 'package.json'), 'utf8'),
@@ -66,13 +67,19 @@ await build({
   },
 });
 await mkdir(resolve(root, 'service/dist'), { recursive: true });
-const swift = spawnSync(
-  'swiftc',
-  [
-    resolve(root, 'service/native/keychain/bridge.swift'),
-    '-o',
-    resolve(root, 'service/dist/keychain-bridge'),
-  ],
-  { stdio: 'inherit' },
-);
-if (swift.status !== 0) throw new Error('钥匙串组件构建失败');
+if (process.platform === 'win32') {
+  await buildWindowsNative(root);
+} else if (process.platform === 'darwin') {
+  const swift = spawnSync(
+    'swiftc',
+    [
+      resolve(root, 'service/native/keychain/bridge.swift'),
+      '-o',
+      resolve(root, 'service/dist/keychain-bridge'),
+    ],
+    { stdio: 'inherit' },
+  );
+  if (swift.status !== 0) throw new Error('钥匙串组件构建失败');
+} else {
+  throw new Error('本机组件目前仅支持 macOS 和 Windows 构建');
+}

@@ -1,8 +1,9 @@
 {
   "name": "youtube-note",
   "private": true,
+  "license": "MIT",
   "type": "module",
-  "version": "0.7.1",
+  "version": "0.8.1",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": ">=22.12"
@@ -13,6 +14,7 @@
     "lint": "eslint extension/src service/src shared/src",
     "format:check": "prettier --check extension/src service/src shared/src scripts/build.mjs",
     "test:unit": "vitest run tests/unit",
+    "test:windows-native": "node scripts/test-windows-native.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:unit && pnpm build",
     "native:install": "node scripts/install-native.mjs"
   },

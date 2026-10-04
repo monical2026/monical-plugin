@@ -298,3 +298,8 @@ HistoryRecordMeta.tsx 提取只读元信息展示，HistoryPage.tsx 接入该组
 ## 0.5.8（2026-10-02，已通过用户验收）
 
 设置页两项快捷键统一系统字体与 13px 常规字重，调整字符间距，使符号和字母比例更协调。
+
+
+## 0.8.1 · Windows 兼容（2026-10-04，待 Windows 实机验收）
+
+保留 Mac 的钥匙串、数据目录、注册方式和界面布局，增加 Windows 凭据管理器、用户级 Chrome 本机组件注册、自带 Node 副本和 Obsidian 目录选择。构建按系统分派；设置显示对应系统凭据提示；本机 Codex 新增原生 exe 查找，.cmd 暂不支持。具体范围、文件职责及验收项见 [Windows 支持](windows-support.md)。未提供签名安装器，未发布或推送。

@@ -252,3 +252,8 @@ DeleteNoteButton 不再为 iconOnly 绕过确认；卡片垃圾桶与编辑器�
 ## 0.7.1 · VideoNote
 
 产品对外名称统一为 VideoNote；内部包名和兼容标识仍为 youtube-note，不影响既有笔记与密钥读取。当前平台能力不变。名称入口覆盖 manifest、HTML title、content 挂载入口、历史品牌、设置标题和快捷键指引。完整检查通过，待 Chrome 外观验收。
+
+
+## 0.8.1 · Windows 兼容（2026-10-04，待 Windows 实机验收）
+
+保留 Mac 的钥匙串、数据目录、注册方式和界面布局，增加 Windows 凭据管理器、用户级 Chrome 本机组件注册、自带 Node 副本和 Obsidian 目录选择。构建按系统分派；设置显示对应系统凭据提示；本机 Codex 新增原生 exe 查找，.cmd 暂不支持。具体范围、文件职责及验收项见 [Windows 支持](windows-support.md)。未提供签名安装器，未发布或推送。

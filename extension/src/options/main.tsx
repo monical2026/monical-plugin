@@ -33,7 +33,12 @@ function SettingsApp() {
       setSettings(loaded);
       setSavedSettings(loaded);
       setReady(true);
-      setStatus('本机组件已连接。密钥保存在 macOS 钥匙串。');
+      const platform = await chrome.runtime.getPlatformInfo();
+      setStatus(
+        platform.os === 'win'
+          ? '本机组件已连接。密钥保存在 Windows 凭据管理器。'
+          : '本机组件已连接。密钥保存在 macOS 钥匙串。',
+      );
     } catch (e) {
       setStatus(errorText(e));
     }
@@ -102,7 +107,7 @@ function SettingsApp() {
       return next;
     });
     setStatus(
-      '已移除此连接，点击保存全部设置后生效；不会删除笔记。原钥匙串条目保留。',
+      '已移除此连接，点击保存全部设置后生效；不会删除笔记。原系统凭据条目保留。',
     );
   }
   async function save() {
@@ -294,10 +299,10 @@ function SettingsApp() {
             <h2>本机组件</h2>
             <p>
               Chrome
-              按需启动组件以访问系统钥匙串和外部服务，不需要长期运行后台程序。
+              按需启动组件以访问系统凭据存储和外部服务，不需要长期运行后台程序。
             </p>
             <p>
-              首次安装请按项目 README 的本机组件注册步骤操作，再点击重新连接。
+              首次安装请按项目开发说明中的本机组件注册步骤操作，再点击重新连接。
             </p>
             <button disabled={busy} onClick={() => void load()}>
               重新连接
