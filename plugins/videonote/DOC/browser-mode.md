@@ -49,3 +49,14 @@ shared/src/ai 是浏览器与本机共用的分析、校验、问答、翻译和
 首次 runtime.onInstalled(reason=install) 自动打开设置页，update 等原因不打开；保留原升级服务模式兼容。打开失败仅设置工具栏说明，不重复弹窗。
 
 新增职责：browser-directory-store.ts 持久化句柄；background/browser-obsidian.ts 核对权限并直接写入；first-install.ts 管理首次打开；shared/ai/analysis-coverage.ts 管理编号约束与一次校正。ExportDialog（超过 300 行）保留原选择、重复确认和下载编排，新增文件写入/持久化/后台逻辑均独立，避免本轮重排原有下载交互。background/index 保留统一来源校验入口，新业务逻辑已拆出。
+
+
+## 0.9.5 脉络诊断与请求执行位置
+
+浏览器模式 `extension/src/lib/rpc.ts` 在调用方（视频面板或历史页）加载 browserService；只有需要后台能力的消息才走 Service Worker。0.9.4 的后台 fetch 钩子没有捕获数据，不能据此断言未发送请求。本轮直接在实际调用链传递诊断回调，不依赖开发者工具。
+
+`ui/analysis-diagnostic.ts` 管理每视频最近一份诊断，独立键 analysisDiagnosticsV1 最多十个视频、每份 80 条事件；日志仅含版本、随机任务 ID、阶段、状态码、大小、耗时与结构错误。无自动上传，无原文、笔记、模型正文或凭据；用户主动复制后分享。开始/完成时持久化，执行中事件保存在当前面板内存，异常退出不承诺保存最后一个事件。存储不可用时保留当前面板内存副本，不阻断生成。旧任务不能覆盖同视频新任务的诊断。
+
+`AnalysisDiagnosticButton.tsx` 同时覆盖复制成功与剪贴板拒绝后的手工复制；刷新后在“视频脉络”页仍可读取已保存诊断。本机模式可记录面板阶段与路由，但不声称有本机进程网络细节。共享复核错误只报告字段路径与类型，不输出 Zod 原始输入或模型正文。
+
+文件长度审查：videoActions 保留现有操作编排，本次用外层诊断包装及少量阶段事件接入；PanelControls 沿用现有面板/历史公共错误入口，复制组件与存储各自独立。未顺带重构其他业务。

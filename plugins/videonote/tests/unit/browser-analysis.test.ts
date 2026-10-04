@@ -1,3 +1,4 @@
+import { readAnalysisDiagnostic } from '../../extension/src/ui/analysis-diagnostic';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeChrome } from '../helpers/browser-chrome';
 import { unlockVault } from '../../extension/src/browser-service/vault';
@@ -9,9 +10,9 @@ beforeEach(() => {
   fixture = fakeChrome();
 });
 afterEach(() => vi.unstubAllGlobals());
-it.each([false, true])(
+it.each(['valid', 'coverage', 'invalid-plan'])(
   '实际视频操作经浏览器 RPC 完成分析与全片复核，范围校正=%s，完全不调用本机',
-  async (invalidFirst) => {
+  async (scenario) => {
     await unlockVault('fixture-password-123');
     await saveSettings({
       settings: {
@@ -60,13 +61,18 @@ it.each([false, true])(
         quotes: [],
       },
     ];
-    if (invalidFirst) {
+    if (scenario === 'coverage') {
       const invalid = structuredClone(responses[0]);
       invalid.topics[0].startId = '2';
       responses.unshift(invalid);
     }
+    if (scenario === 'invalid-plan') {
+      Object.assign(responses[1], {
+        methods: [{ indexes: [0], limitations: 'PRIVATE_MODEL_TEXT' }],
+      });
+    }
     const fetch = vi.fn(
-      async () =>
+      async (_url: unknown, _options?: RequestInit) =>
         new Response(
           JSON.stringify({
             choices: [
@@ -109,10 +115,33 @@ it.each([false, true])(
       setCandidate: vi.fn(),
     });
     await actions.analyze();
+    const diagnostic = await readAnalysisDiagnostic(record.videoId);
+    expect(diagnostic).toContain('rpc.browser');
+    expect(diagnostic).toContain('network.response');
+    expect(diagnostic).toContain('browser.reviewAnalysis');
+    expect(diagnostic).not.toContain('fixture-key');
+    expect(diagnostic).not.toContain(record.segments[0].original);
+    expect(diagnostic).not.toContain('PRIVATE_MODEL_TEXT');
+    if (scenario === 'invalid-plan') {
+      expect(diagnostic).toContain(
+        'methods.[0].limitations: expected=array, actual=string',
+      );
+      expect(diagnostic).toContain('"outcome": "failed"');
+      expect(record.analysis).toBeNull();
+      expect(error).toHaveBeenLastCalledWith(
+        expect.stringContaining('methods.[0].limitations'),
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
+      const reviewPrompt = JSON.parse(fetch.mock.calls[1][1]?.body as string)
+        .messages[1].content;
+      expect(reviewPrompt).not.toContain('"formatVersion":3');
+      expect(reviewPrompt).toContain('indexes');
+      return;
+    }
     expect(error.mock.calls.filter(([value]) => value)).toEqual([]);
     expect(record.analysis?.summary).toBe('全片总结');
     expect(record.analysis?.topics[0].startSegmentId).toBe('s1');
-    expect(fetch).toHaveBeenCalledTimes(invalidFirst ? 3 : 2);
+    expect(fetch).toHaveBeenCalledTimes(scenario === 'coverage' ? 3 : 2);
     expect(fixture.chrome.runtime.sendMessage).not.toHaveBeenCalled();
   },
 );

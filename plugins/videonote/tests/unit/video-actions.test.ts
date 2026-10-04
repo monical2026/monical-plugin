@@ -1,3 +1,4 @@
+import { fakeChrome } from '../helpers/browser-chrome';
 import { beforeEach, expect, it, vi } from 'vitest';
 import {
   recordSchema,
@@ -68,7 +69,10 @@ function setup(segments = [segment('0')], analysis: Analysis | null = null) {
     },
   };
 }
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  fakeChrome();
+});
 it('LLM 当前段翻译成功立即保存，无需二次应用', async () => {
   mockedRpc.mockResolvedValue([{ id: '0', text: '你好' }]);
   const state = setup();
@@ -231,7 +235,9 @@ it('错误的逐字稿字段在调用模型前报告请求不兼容且不泄露�
 });
 
 it('中文原稿的本地和 LLM 翻译均不提交，保留原稿', async () => {
-  const state = setup([{ ...segment('0'), original: '中文原稿', sourceLanguage: 'zh' }]);
+  const state = setup([
+    { ...segment('0'), original: '中文原稿', sourceLanguage: 'zh' },
+  ]);
   await state.actions.translateLocal();
   await state.actions.llmTranslate('all');
   expect(mockedRpc).not.toHaveBeenCalled();

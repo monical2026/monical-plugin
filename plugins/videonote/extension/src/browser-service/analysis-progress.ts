@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from '../../../shared/src/ai/analysis-diagnostics';
 import { z } from 'zod';
 import {
   analysisSchema,
@@ -17,6 +18,7 @@ export async function analysisProgress(
   revision: number,
   task: string,
   action: () => Promise<Analysis>,
+  trace?: AnalysisTrace,
 ) {
   const request = z
     .object({
@@ -31,7 +33,7 @@ export async function analysisProgress(
     .parse(input);
   if (!request.workflow) return action();
   const key = 'browserAnalysis:' + request.workflow.videoId;
-  const stamp = JSON.stringify([2, request.workflow.source, profile, revision]);
+  const stamp = JSON.stringify([3, request.workflow.source, profile, revision]);
   const hash = Array.from(
     new Uint8Array(
       await crypto.subtle.digest(
@@ -65,9 +67,11 @@ export async function analysisProgress(
         ? previous.data
         : { stamp, parts: {}, updatedAt: Date.now() };
     if (checkpoint.parts[hash]) {
+      trace?.('cache.hit');
       await store(key, { ...checkpoint, runId: request.workflow?.runId });
       return checkpoint.parts[hash];
     }
+    trace?.('cache.miss');
     const result = await action();
     if (task === 'reviewAnalysis') await chrome.storage.local.remove(key);
     else

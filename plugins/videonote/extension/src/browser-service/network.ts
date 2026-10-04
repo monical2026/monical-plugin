@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from '../../../shared/src/ai/analysis-diagnostics';
 // 浏览器无法像 Node 一样钉住 DNS 地址：仅允许用户授予权限的公开 HTTPS 主机，拒绝 IP 和本地域名。
 export function apiUrl(base: string, path = '') {
   const url = new URL(base);
@@ -33,13 +34,16 @@ export async function requestJson(
   headers: Record<string, string>,
   body?: unknown,
   timeout = 90000,
+  trace?: AnalysisTrace,
 ): Promise<unknown> {
+  trace?.('network.permission');
   apiUrl(url.origin);
   if (!(await chrome.permissions.contains({ origins: [`${url.origin}/*`] })))
     throw new Error('尚未授权此服务，请到设置页测试连接或保存设置');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
+    trace?.('network.send');
     const response = await fetch(url, {
       method: body === undefined ? 'GET' : 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
@@ -49,6 +53,7 @@ export async function requestJson(
       redirect: 'error',
       cache: 'no-store',
     });
+    trace?.('network.response', { status: response.status });
     if (!response.ok)
       throw new Error(
         `外部服务返回 HTTP ${response.status}，请检查服务配置、权限或额度`,
@@ -73,12 +78,14 @@ export async function requestJson(
       bytes.set(chunk, offset);
       offset += chunk.length;
     }
+    trace?.('network.body', { characters: length });
     try {
       return JSON.parse(new TextDecoder().decode(bytes));
     } catch {
       throw new Error('外部服务未返回有效 JSON');
     }
   } catch (error) {
+    trace?.(controller.signal.aborted ? 'network.timeout' : 'network.failed');
     if (error instanceof TypeError || controller.signal.aborted)
       throw new Error(
         '服务连接失败或超时，未自动重试；请检查网络、授权与服务地址',

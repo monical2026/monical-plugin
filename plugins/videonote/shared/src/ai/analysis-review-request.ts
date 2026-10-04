@@ -1,9 +1,10 @@
+import { parseReviewPlan } from './analysis-diagnostics';
 import {
   coverageInstruction,
   assertTopicCoverage,
   correctCoverage,
 } from './analysis-coverage';
-import { analysisRules } from './analysis-prompt';
+import { analysisContentRules } from './analysis-prompt';
 import { planSchema, reviewPlanInstructions } from './analysis-review-plan';
 import type { reviewMaterial } from './analysis-review';
 type Material = ReturnType<typeof reviewMaterial>;
@@ -20,9 +21,10 @@ async function request(
   data: unknown,
   generate: (prompt: string) => Promise<string>,
   focus = '',
+  scope: 'full' | 'chapters' | 'details' = 'full',
 ) {
   const text = await generate(
-    `${analysisRules}\n${reviewGoal}\n${reviewPlanInstructions}\n${focus}\n全片材料：${JSON.stringify(data)}`,
+    `以下是内容质量标准，不是本轮输出结构：\n${analysisContentRules}\n${reviewGoal}\n${reviewPlanInstructions(scope)}\n${focus}\n全片材料：${JSON.stringify(data)}`,
   );
   try {
     return JSON.parse(
@@ -50,7 +52,8 @@ export async function requestReviewPlan(
     );
   // 长片按职责拆分，避免一个请求同时改写章节及大量提炼条目。任一步失败不保存。
   const chapters = await correctCoverage(async (chapterCorrection) => {
-    const parsed = chapterPlan.safeParse(
+    const parsed = parseReviewPlan(
+      chapterPlan,
       await request(
         {
           ...material,
@@ -61,14 +64,15 @@ export async function requestReviewPlan(
         },
         generate,
         `${coverageInstruction(material.segmentCount)}\n${correction}\n${chapterCorrection}\n本轮只复核章节与总结，不处理其他栏目。只输出 {"summary":"简短总结","topics":[章节修订计划]}，不要输出其他字段。`,
+        'chapters',
       ),
+      '全片章节复核计划',
     );
-    if (!parsed.success)
-      throw new Error('全片章节复核计划格式不完整，已有结果未覆盖');
-    assertTopicCoverage(parsed.data.topics, material.segmentCount);
-    return parsed.data;
+    assertTopicCoverage(parsed.topics, material.segmentCount);
+    return parsed;
   });
-  const details = detailPlan.safeParse(
+  const details = parseReviewPlan(
+    detailPlan,
     await request(
       {
         ...material,
@@ -83,9 +87,9 @@ export async function requestReviewPlan(
       },
       generate,
       '本轮只复核关键点、方法、前置知识、金句。章节仅供理解主线，不得输出或修改章节。只输出 {"knowledge":[分组修订计划],"methods":[分组修订计划],"prerequisites":[保留序号],"quotes":[保留或截取计划]} 四个字段。序号仍对应本轮材料各自原数组。',
+      'details',
     ),
+    '全片提炼条目复核计划',
   );
-  if (!details.success)
-    throw new Error('全片提炼条目复核计划格式不完整，已有结果未覆盖');
-  return { ...chapters, ...details.data };
+  return { ...chapters, ...details };
 }
