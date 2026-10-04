@@ -1,3 +1,5 @@
+import { firstInstall } from './first-install';
+import { browserObsidian } from './browser-obsidian';
 import { fetchCaptions } from './captions';
 import {
   pageSource,
@@ -122,6 +124,7 @@ async function handle(
     return true;
   }
   if (!ui && !settings) throw new Error('此操作仅允许插件界面调用');
+  if (r.type === 'browserObsidian') return browserObsidian(r.action, r.payload);
   if (r.type === 'openSettings') {
     await chrome.runtime.openOptionsPage();
     return true;
@@ -284,6 +287,11 @@ chrome.action.onClicked.addListener((tab) => {
   );
 });
 chrome.runtime.onInstalled.addListener((details) => {
+  void firstInstall(details.reason).catch(() =>
+    chrome.action.setTitle({
+      title: '设置页打开失败，请点击扩展的设置入口配置服务',
+    }),
+  );
   if (
     details.reason === 'update' &&
     details.previousVersion &&

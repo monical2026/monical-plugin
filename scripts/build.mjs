@@ -29,6 +29,7 @@ await build({
       input: {
         panel: resolve(root, 'extension/panel.html'),
         options: resolve(root, 'extension/options.html'),
+        obsidian: resolve(root, 'extension/obsidian.html'),
       },
     },
   },

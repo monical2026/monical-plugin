@@ -5,14 +5,22 @@ export function ModelRouting({
   settings,
   setSettings,
   busy,
+  browserMode = false,
 }: {
   settings: Settings;
   setSettings: Dispatch<SetStateAction<Settings>>;
   busy: boolean;
+  browserMode?: boolean;
 }) {
   return (
     <section id="routing">
       <h2>模型分工</h2>
+      {browserMode && (
+        <p className="muted">
+          浏览器模式使用 API
+          模型生成脉络，无需本机组件。请选择下方的“中文摘要与视频脉络”模型并保存。
+        </p>
+      )}
       {(
         [
           ['translateProfile', 'LLM 翻译', 'llm'],
@@ -31,7 +39,10 @@ export function ModelRouting({
           >
             <option value="">请选择</option>
             {settings.profiles
-              .filter((p) => p.kind === kind)
+              .filter(
+                (p) =>
+                  p.kind === kind && (!browserMode || p.connection !== 'codex'),
+              )
               .map((p) => (
                 <option value={p.id} key={p.id}>
                   {profileLabel(p)}

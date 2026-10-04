@@ -1,5 +1,15 @@
 # 当前实施状态
 
+## 0.9.4 开发状态
+
+首主题范围错误已通过不完整编号回归复现，增加明确编号契约及一次定向校正；用户原模型回复未取得，不声称已复现其具体完整请求。知识库目录句柄持久化并通过后台查询权限后直接写入，首次安装自动打开设置页。浏览器 OPFS 实际文件及 IndexedDB 句柄验证已完成；真实 Windows Chrome 外部目录与用户模型待验收。详细结果见 test-feedback.md 的 0.9.4 节。
+
+
+## 0.9.3 开发状态
+
+浏览器 Obsidian 文件夹导出已实现，独立页面/请求暂存/写入分别见 extension/src/export/BrowserObsidianPage.tsx、browser-export-request.ts、browser-obsidian.ts；文件名规则提取至 shared/src/export-filename.ts 与本机共用。脉络浏览器 API 完整回归通过，纠正本机提示与模型分工。46 文件/257 测试及完整 check 通过，安装包已本地生成；Windows 原生授权与真实模型仍待验收，细节见 test-feedback.md 的 0.9.3 节。
+
+
 ## 0.9.2 · 安装包问题修订（用户验收通过，已发布）
 
 0.9.2 已按用户授权提交并正式发布，见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)；源码提交 ccbbd36，附件 VideoNote-0.9.2-chrome.zip。以下旧版本内容为当时记录，当前交付以本节与[安装指南](user-guide.md)为准。

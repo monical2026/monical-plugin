@@ -229,6 +229,11 @@ export const requestSchema = z.discriminatedUnion('type', [
     tabId: z.number().optional(),
     videoId: videoIdSchema,
   }),
+  z.object({
+    type: z.literal('browserObsidian'),
+    action: z.enum(['status', 'export']),
+    payload: z.unknown().optional(),
+  }),
   z.object({ type: z.literal('settings') }),
   z.object({ type: z.literal('openSettings') }),
   z.object({ type: z.literal('invalidate') }),

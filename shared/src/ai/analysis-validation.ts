@@ -1,3 +1,4 @@
+import { assertTopicCoverage } from './analysis-coverage';
 import type { Segment } from '../index';
 import type { parseAnalysisOutput } from './analysis-output';
 type Output = ReturnType<typeof parseAnalysisOutput>;
@@ -13,13 +14,9 @@ export function validateAnalysisV3(data: Output, count: number) {
   };
   if (!data.summary.trim() || data.summary.length > 200) fail('简短总结');
   if (!data.knowledge || !data.prerequisites) fail('关键点或前置知识栏目');
-  let next = 1;
+  assertTopicCoverage(data.topics, count);
   for (const [index, topic] of data.topics.entries()) {
-    const start = Number(topic.startId),
-      end = Number(topic.endId),
-      field = `第 ${index + 1} 个主题`;
-    if (start !== next || !Number.isInteger(end) || end < start || end > count)
-      fail(`${field}连续来源范围`);
+    const field = `第 ${index + 1} 个主题`;
     if (!topic.keyPoints?.length) fail(`${field}要点`);
     if (!Array.isArray(topic.problem) || !Array.isArray(topic.application))
       fail(`${field}分条问题或场景`);
@@ -28,9 +25,7 @@ export function validateAnalysisV3(data: Output, count: number) {
       !topic.clipReason.length
     )
       fail(`${field}切片等级或理由`);
-    next = end + 1;
   }
-  if (next !== count + 1) fail('主题末尾覆盖范围');
   for (const [index, item] of (data.knowledge ?? []).entries()) {
     if (
       !item.sources?.length ||

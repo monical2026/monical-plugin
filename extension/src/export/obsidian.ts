@@ -51,3 +51,23 @@ export function blobDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+export async function browserObsidianTarget() {
+  return obsidianTargetSchema
+    .nullable()
+    .parse(await rpc({ type: 'browserObsidian', action: 'status' }));
+}
+export async function sendBrowserObsidian(payload: {
+  videoId: string;
+  title: string;
+  markdown: string;
+  copy: boolean;
+}) {
+  return z
+    .union([
+      z.object({ status: z.literal('authorizationRequired') }),
+      z.object({ status: z.literal('duplicate'), files: z.array(z.string()) }),
+      z.object({ status: z.literal('saved'), filename: z.string() }),
+    ])
+    .parse(await rpc({ type: 'browserObsidian', action: 'export', payload }));
+}

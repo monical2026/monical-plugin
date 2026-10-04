@@ -31,7 +31,7 @@ export async function analysisProgress(
     .parse(input);
   if (!request.workflow) return action();
   const key = 'browserAnalysis:' + request.workflow.videoId;
-  const stamp = JSON.stringify([request.workflow.source, profile, revision]);
+  const stamp = JSON.stringify([2, request.workflow.source, profile, revision]);
   const hash = Array.from(
     new Uint8Array(
       await crypto.subtle.digest(
