@@ -1,6 +1,6 @@
 # VideoNote
 
-源码现位于[插件合集](https://github.com/monical2026/monical-plugin/tree/main/plugins/videonote)，完整 Git 提交历史已保留。原仓库与 0.9.2 Release 保留供历史查阅；后续开发在合集的 `plugins/videonote/` 内进行。
+源码现位于[插件合集](https://github.com/monical2026/monical-plugin/tree/main/plugins/videonote)，完整 Git 提交历史已保留。原仓库与 0.9.2 Release 保留供历史查阅；日常开发继续在原独立 VideoNote 项目内进行；此目录为合集交付副本。
 
 帮助看视频学习的人阅读双语逐字稿、快速记录重点，并把理解与疑问留成可回看的笔记。
 

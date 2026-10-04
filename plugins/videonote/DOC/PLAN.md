@@ -2,7 +2,7 @@
 
 ## 2026-10-04 · 迁入插件合集
 
-用户授权将项目迁入 `monical2026/monical-plugin` 并推送。使用不压缩历史的 Git subtree 合并至 `plugins/videonote/`，保留原提交及 `v0.9.2` 标签；现有 Tab Haven 保持原样。成品包复制已发布的 0.9.2 ZIP 至 `downloads/videonote/`，不重新构建、不升级版本。旧仓库及其 Release 保留；后续开发从合集内的插件目录进行，原本地独立工程保持原样。
+用户授权将项目迁入 `monical2026/monical-plugin` 并推送。使用不压缩历史的 Git subtree 合并至 `plugins/videonote/`，保留原提交及 `v0.9.2` 标签；现有 Tab Haven 保持原样。成品包复制已发布的 0.9.2 ZIP 至 `downloads/videonote/`，不重新构建、不升级版本。旧仓库及其 Release 保留；用户随后最终确认日常开发仍在原本地独立工程进行，合集仅接收已确认的交付版本。
 
 
 ## 0.9.2 · 安装包问题修订（用户验收通过，已发布）
