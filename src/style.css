@@ -34,3 +34,6 @@
 #pinned-option{display:flex;align-items:center;gap:9px;font-size:13px;line-height:1.6;margin-top:12px}#include-pinned{accent-color:#52775e;width:16px;height:16px}.confirm-item.is-kept{color:#52775e;background:#eaf0e4;border-radius:6px;padding:8px}
 
 .quick-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.quick-filters button{display:flex;align-items:center;gap:7px;border:1px solid #e0e6da;background:transparent;border-radius:9px;padding:8px 12px;font-size:12px;color:#788571}.quick-filters button[aria-pressed="true"]{color:#365c47;background:#e8efdf;border-color:#c9d8c0}.quick-filters button:hover{border-color:#aabb9d}.quick-filters span{font-size:10px;font-variant-numeric:tabular-nums}
+
+/* 紧凑搜索区：保留标题与中央搜索，为标签列表释放首屏空间。 */
+.topbar{padding-top:16px;padding-bottom:14px}.hero{padding:12px 0 24px}.hero h1{font-size:25px;letter-spacing:1px;margin:5px 0 18px}#search{height:50px;max-width:660px;border-radius:13px;padding:5px 7px 5px 18px}#search button{width:36px;height:36px;border-radius:9px}.shortcut-sidebar{margin-top:12px}
