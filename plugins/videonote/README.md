@@ -1,5 +1,7 @@
 # VideoNote
 
+源码现位于[插件合集](https://github.com/monical2026/monical-plugin/tree/main/plugins/videonote)，完整 Git 提交历史已保留。原仓库与 0.9.2 Release 保留供历史查阅；后续开发在合集的 `plugins/videonote/` 内进行。
+
 帮助看视频学习的人阅读双语逐字稿、快速记录重点，并把理解与疑问留成可回看的笔记。
 
 [快速开始](#快速开始) · [功能介绍](#你可以用它做什么) · [常见问题](#常见问题) · [更新日志](DOC/changelog.md)
@@ -44,7 +46,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 准备 Chrome 和一个支持的视频。第一次建议选择有字幕的视频，先体验阅读和记录，再按需配置 AI。
 
-下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/YouTube---/releases/download/v0.9.2/VideoNote-0.9.2-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包已正式发布，说明见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
+下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.2-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包已正式发布，说明见 [GitHub Release](https://github.com/monical2026/VideoNote/releases/tag/v0.9.2)。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
 
 ### 安装
 
@@ -126,7 +128,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 ## 反馈与后续计划
 
-遇到问题或有建议，可以通过 [GitHub Issues](https://github.com/monical2026/YouTube---/issues) 反馈。请说明插件版本、浏览器与系统、视频平台、操作步骤和错误提示；不要提交 API Key 或私人笔记。
+遇到问题或有建议，可以通过 [GitHub Issues](https://github.com/monical2026/monical-plugin/issues) 反馈。请说明插件版本、浏览器与系统、视频平台、操作步骤和错误提示；不要提交 API Key 或私人笔记。
 
 后续方向包括通用无字幕转写，以及小红书和抖音单条视频适配。这些是计划方向，尚不代表已支持，也没有承诺完成日期。
 

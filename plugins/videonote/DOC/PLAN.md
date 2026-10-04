@@ -1,5 +1,10 @@
 # VideoNote实施计划
 
+## 2026-10-04 · 迁入插件合集
+
+用户授权将项目迁入 `monical2026/monical-plugin` 并推送。使用不压缩历史的 Git subtree 合并至 `plugins/videonote/`，保留原提交及 `v0.9.2` 标签；现有 Tab Haven 保持原样。成品包复制已发布的 0.9.2 ZIP 至 `downloads/videonote/`，不重新构建、不升级版本。旧仓库及其 Release 保留；后续开发从合集内的插件目录进行，原本地独立工程保持原样。
+
+
 ## 0.9.2 · 安装包问题修订（用户验收通过，已发布）
 
 0.9.2 已按用户授权提交并正式发布，见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)；源码提交 ccbbd36，附件 VideoNote-0.9.2-chrome.zip。以下旧版本内容为当时记录，当前交付以本节与[安装指南](user-guide.md)为准。

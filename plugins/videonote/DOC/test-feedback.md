@@ -1133,3 +1133,13 @@ pnpm check 通过：类型、lint、格式、144 项单元测试及构建。Chro
 已按用户明确授权在现有公开仓库发布 [v0.9.2](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)，标签对应源码提交 ccbbd36e193361c59a5ef8aee220b94e2c376615；附件 VideoNote-0.9.2-chrome.zip 为已验收包，大小 2,124,548 字节，GitHub 返回的 SHA256 与本地一致：2019d8d2151de59f3d7667c34f0cf8e22c6ab63e0cdca6cbd84778af4ac58174。
 
 此次仅同步 README、使用指南、开发说明、浏览器模式、计划、更新日志和实现记录中的正式下载入口、发布状态及验收措辞，保留历史验证记录。纯文档更新维持 0.9.2，不重建 ZIP、不移动 Release 标签。核对 Release 附件状态、文档本地链接和 git diff --check；沿用已记录的代码验证结果，不重复运行与本次改动无关的代码测试。用户已授权本次文档提交和推送。
+
+
+## 2026-10-04 · 插件合集迁移验证
+
+- 环境：macOS，本地 Git，目标公开仓库 `monical2026/monical-plugin`。用户明确授权合并并推送，旧仓库保留。
+- 使用不带 squash 的 subtree 合并；原 main 的 17 个提交全部可从合集 HEAD 到达，提交对象不重写；原 `v0.9.2` 标签指向保持为 ccbbd36e193361c59a5ef8aee220b94e2c376615。导入时插件完整 Git tree 与原 main 完全一致。
+- 合集原有 Tab Haven 源码和下载包与迁移前相同。迁入后仅调整 VideoNote 文档、目录约定及合集入口，没有修改产品源码、依赖、版本或锁文件。
+- 复制原 Release 成品 ZIP：SHA-256 为 `2019d8d2151de59f3d7667c34f0cf8e22c6ab63e0cdca6cbd84778af4ac58174`，与 GitHub 记录完全一致；ZIP CRC 检查通过，24 个条目，manifest 版本 0.9.2，无 node_modules、Git 数据或凭据文件。
+- 本轮验证历史可达性、文件一致性、安装包完整性、文档相对链接及 Git 差异。不安装依赖、不重新构建或运行产品测试，不作为新的 Chrome 或 Windows 实机验收；沿用原已发布安装包。
+- GitHub Release、Issues 等平台记录仍留在旧仓库；新合集提供独立 ZIP 下载入口。原本地 youtube-note 工程保留，后续开发在合集 plugins/videonote 内进行。

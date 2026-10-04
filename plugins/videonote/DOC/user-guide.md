@@ -4,7 +4,7 @@
 
 ## 安装扩展
 
-从 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2) 下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/YouTube---/releases/download/v0.9.2/VideoNote-0.9.2-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
+从插件合集下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.2-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
 
 下载后按以下步骤安装：
 
@@ -63,7 +63,7 @@
 
 先查看[常见问题](../README.md#常见问题)。本机组件连接失败时，检查组件是否安装，以及注册时的 Node 路径是否仍有效；技术排查见[开发说明](development.md)。
 
-仍无法解决时，到 [GitHub Issues](https://github.com/monical2026/YouTube---/issues) 提供版本、系统、浏览器、平台、复现步骤和错误提示。不要附带密钥或私人笔记。
+仍无法解决时，到 [GitHub Issues](https://github.com/monical2026/monical-plugin/issues) 提供版本、系统、浏览器、平台、复现步骤和错误提示。不要附带密钥或私人笔记。
 
 ## 保存设置与更新安装包
 

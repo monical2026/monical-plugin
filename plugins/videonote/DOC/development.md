@@ -15,7 +15,7 @@ pnpm run package:extension
 
 ## 环境与源码
 
-从[项目仓库](https://github.com/monical2026/YouTube---)克隆源码，或通过 Code → Download ZIP 下载并解压。在项目根目录运行下面的命令。
+从[插件合集仓库](https://github.com/monical2026/monical-plugin)克隆源码，或通过 Code → Download ZIP 下载并解压。先进入 `plugins/videonote/`，再运行本文命令；本文“项目根目录”均指该插件目录，不是合集根目录。插件保留独立的 pnpm 工作区及锁文件。
 
 - Node.js：根 package.json 要求 >=22.12；已有开发记录使用 26.3.1。
 - pnpm：packageManager 固定为 11.19.0，依赖以 pnpm-lock.yaml 为准；不要混用其他包管理器。
@@ -82,4 +82,4 @@ macOS 启动脚本记录执行安装时的 Node 绝对路径。移动或删除�
 
 ## 成品分发状态
 
-0.9.2 已正式发布到 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)，附件为 VideoNote-0.9.2-chrome.zip，源代码提交为 ccbbd36e193361c59a5ef8aee220b94e2c376615。普通用户的下载及安装入口统一见[安装指南](user-guide.md#安装扩展)。扩展 ZIP 与可选本机组件是两项不同的交付；此 Release 不包含本机组件安装器。后续发布仍需检查安装包、记录验证结果并取得发布授权。纯文档更新不升级插件版本、不重建已发布 ZIP，也不移动已发布标签。
+0.9.2 已正式发布到 [GitHub Release](https://github.com/monical2026/VideoNote/releases/tag/v0.9.2)，附件为 VideoNote-0.9.2-chrome.zip，源代码提交为 ccbbd36e193361c59a5ef8aee220b94e2c376615。普通用户的下载及安装入口统一见[安装指南](user-guide.md#安装扩展)。扩展 ZIP 与可选本机组件是两项不同的交付；此 Release 不包含本机组件安装器。后续发布仍需检查安装包、记录验证结果并取得发布授权。纯文档更新不升级插件版本、不重建已发布 ZIP，也不移动已发布标签。
