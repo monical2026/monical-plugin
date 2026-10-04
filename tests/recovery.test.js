@@ -36,3 +36,24 @@ test('可跨批次选择一项恢复，同网址条目互不影响，失效选�
  assert.deepEqual(recovery.items.map(t=>t.id),[3,1]);
  await recovery.restore(choice); assert.deepEqual(opened,[2]);
 });
+test('30 分钟到期精确移除，旧选择不能恢复，失败不续期', async () => {
+ let time=0,calls=0;
+ const recovery=createRecovery({reopen:async()=>{calls++;throw Error();}},()=>time);
+ recovery.add([{url:'https://x.com'}]);const id=recovery.items[0].recoveryId;
+ time=29*60000;await recovery.restore(id);assert.equal(recovery.items[0].expiresAt,30*60000);
+ time=30*60000;assert.equal(recovery.items.length,0);await recovery.restore(id);assert.equal(calls,1);
+});
+test('超过 100 页淘汰最早记录，新批次单独计时', () => {
+ let time=0;const recovery=createRecovery({},()=>time);
+ recovery.add(Array.from({length:105},(_,id)=>({id,url:'https://x.com'})));
+ assert.equal(recovery.items.length,100);assert.equal(recovery.items[0].id,5);
+ time=60000;recovery.add([{id:200,url:'https://x.com'}]);
+ assert.equal(recovery.items.length,100);assert.equal(recovery.items[0].id,200);
+ time=30*60000;assert.deepEqual(recovery.items.map(t=>t.id),[200]);
+});
+test('恢复等待期间记录过期不影响后来新增的批次', async () => {
+ let time=0,release;const recovery=createRecovery({reopen:()=>new Promise(r=>{release=r;})},()=>time);
+ recovery.add([{url:'https://x.com/old'}]);const pending=recovery.restore();
+ time=30*60000;assert.equal(recovery.items.length,0);recovery.add([{url:'https://x.com/new'}]);
+ release();await pending;assert.equal(recovery.items[0].url,'https://x.com/new');
+});

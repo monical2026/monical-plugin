@@ -1,33 +1,50 @@
-// 只记录本仪表盘实际关闭成功的页面，恢复失败的条目保留供重试。
-export function createRecovery(api) {
+// 恢复记录仅在当前页面有效，过期或超过容量的旧记录自动移除。
+export const RECOVERY_TTL = 30 * 60 * 1000;
+export const RECOVERY_LIMIT = 100;
+export function createRecovery(api, now = Date.now) {
   const batches = [];
   let restoring = false, sequence = 0;
+  function prune() {
+    const time = now();
+    for (const batch of batches) {
+      for (let i = batch.length - 1; i >= 0; i--) if (batch[i].expiresAt <= time) batch.splice(i, 1);
+    }
+    let excess = batches.reduce((sum, batch) => sum + batch.length, 0) - RECOVERY_LIMIT;
+    for (const batch of batches) {
+      if (excess > 0) excess -= batch.splice(0, excess).length;
+    }
+    for (let i = batches.length - 1; i >= 0; i--) if (!batches[i].length) batches.splice(i, 1);
+  }
   return {
-    get count() { return batches.at(-1)?.length || 0; },
-    get items() { return batches.slice().reverse().flat().map(tab => ({ ...tab })); },
+    get count() { prune(); return batches.at(-1)?.length || 0; },
+    get items() { prune(); return batches.slice().reverse().flat().map(tab => ({ ...tab })); },
     get busy() { return restoring; },
-    add(tabs) { if (tabs.length) batches.push(tabs.map(tab => ({ ...tab, recoveryId: ++sequence }))); },
+    add(tabs) {
+      if (tabs.length) batches.push(tabs.map(tab => ({ ...tab, recoveryId: ++sequence, expiresAt: now() + RECOVERY_TTL })));
+      prune();
+    },
     async restore(recoveryId) {
+      prune();
       if (restoring || !batches.length) return { restored: 0, failed: 0 };
-      restoring = true;
       const batch = recoveryId === undefined ? batches.at(-1) : batches.find(batch => batch.some(tab => tab.recoveryId === recoveryId));
-      if (!batch) { restoring = false; return { restored: 0, failed: 0 }; }
-      const remaining = [];
-      let restored = 0;
+      if (!batch) return { restored: 0, failed: 0 };
+      restoring = true;
+      let restored = 0, failed = 0;
       try {
-        for (const tab of [...batch].sort((a, b) => a.windowId - b.windowId || (a.index || 0) - (b.index || 0))) {
-          if (recoveryId !== undefined && tab.recoveryId !== recoveryId) { remaining.push(tab); continue; }
+        const selected = batch.filter(tab => recoveryId === undefined || tab.recoveryId === recoveryId);
+        for (const tab of selected.sort((a, b) => a.windowId - b.windowId || (a.index || 0) - (b.index || 0))) {
+          prune();
+          if (!batch.includes(tab)) continue;
           try {
             const url = new URL(tab.pendingUrl || tab.url);
             if (!['https:', 'http:', 'file:', 'chrome:', 'chrome-extension:'].includes(url.protocol)) throw new Error('不支持恢复此地址');
             await api.reopen(tab); restored++;
-          } catch { remaining.push(tab); }
+            const index = batch.indexOf(tab);
+            if (index >= 0) batch.splice(index, 1);
+          } catch { failed++; }
         }
-        const index = batches.indexOf(batch);
-        if (remaining.length) batches[index] = remaining;
-        else batches.splice(index, 1);
-        return { restored, failed: recoveryId === undefined ? remaining.length : Number(remaining.some(tab => tab.recoveryId === recoveryId)) };
-      } finally { restoring = false; }
+        return { restored, failed };
+      } finally { restoring = false; prune(); }
     },
   };
 }

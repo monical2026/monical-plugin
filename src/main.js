@@ -124,9 +124,13 @@ function setRecoveryOpen(open) {
   $('#recovery-panel').hidden = !open;
   $('#reopen-tabs').setAttribute('aria-expanded', open);
 }
+let recoveryView = '';
 function renderRecovery() {
   const trigger = $('#reopen-tabs');
   const items = recovery.items;
+  const view = JSON.stringify([recovery.busy, items.map(tab => [tab.recoveryId, Math.ceil((tab.expiresAt - Date.now()) / 60000)])]);
+  if (view === recoveryView) return;
+  recoveryView = view;
   const label = items.length ? `选择重新打开的标签（${items.length}）` : '暂无可重新打开的标签';
   trigger.title = label;
   trigger.setAttribute('aria-label', label);
@@ -145,11 +149,21 @@ function renderRecovery() {
     });
     restore.disabled = recovery.busy;
     restore.title = `${tab.title || '未命名页面'}\n${address(tab)}`;
-    restore.append(node('span', 'recovery-title', tab.title || '未命名页面'), node('span', 'recovery-url', address(tab)));
+    restore.append(node('span', 'recovery-title', tab.title || '未命名页面'), node('span', 'recovery-url', address(tab)), node('span', 'recovery-expiry', `剩余 ${Math.max(1, Math.ceil((tab.expiresAt - Date.now()) / 60000))} 分钟`));
     row.append(restore); return row;
   }));
   if (!items.length) setRecoveryOpen(false);
 }
+// 定期清理，同时保留列表中正在使用的键盘焦点。
+setInterval(() => {
+  const focusedIndex = [...document.querySelectorAll('.recovery-item')].indexOf(document.activeElement);
+  renderRecovery();
+  if (focusedIndex >= 0) {
+    const choices = document.querySelectorAll('.recovery-item');
+    (choices[Math.min(focusedIndex, choices.length - 1)] || $('#reopen-tabs')).focus();
+  }
+}, 1000);
+window.addEventListener('focus', renderRecovery);
 $('#reopen-tabs').addEventListener('click', () => {
   const open = $('#recovery-panel').hidden;
   renderRecovery();
