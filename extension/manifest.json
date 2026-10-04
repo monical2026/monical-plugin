@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VideoNote",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "带时间的双语逐字稿、中文梳理和可编辑学习笔记。",
   "permissions": [
     "storage",

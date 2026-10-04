@@ -1,5 +1,9 @@
 # 当前实施状态
 
+## 0.9.2 · 安装包问题修订（待验收）
+
+background/native-client.ts 静态引用 browserService，build.mjs 检查后台所有输出 chunk 的 dynamicImports。ProfileCard 使用 providers 的官方密钥链接；设置页增加保存反馈和密钥库检查，保留原成功保存基准逻辑。
+
 ## 0.9.1 当前增量（2026-10-04）
 
 新增 extension/src/browser-service 负责浏览器配置、密钥、受限请求、计费任务及进度；shared/src/ai 复用原分析与问答规则，service 保留兼容出口与本机存储。设置页新增模式与密钥库，RPC 按模式分派。scripts/package-extension.mjs 生成独立 ZIP，不携带本机组件。详细边界见 [浏览器模式](browser-mode.md)。

@@ -39,7 +39,7 @@ for (const [name, entry, format] of [
   ['bridge', 'content/bridge.ts', 'iife'],
   ['bilibili-bridge', 'content/bilibili-bridge.ts', 'iife'],
 ]) {
-  await build({
+  const result = await build({
     configFile: false,
     build: {
       outDir: output,
@@ -52,6 +52,17 @@ for (const [name, entry, format] of [
       },
     },
   });
+  if (name === 'background') {
+    for (const bundle of Array.isArray(result) ? result : [result]) {
+      if (
+        'output' in bundle &&
+        bundle.output.some(
+          (item) => item.type === 'chunk' && item.dynamicImports.length,
+        )
+      )
+        throw new Error('Service Worker 构建禁止动态 import()');
+    }
+  }
 }
 await copyFile(
   resolve(root, 'extension/manifest.json'),

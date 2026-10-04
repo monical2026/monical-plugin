@@ -4,7 +4,7 @@
 
 [快速开始](#快速开始) · [功能介绍](#你可以用它做什么) · [常见问题](#常见问题) · [更新日志](DOC/changelog.md)
 
-当前版本 **0.9.1**，支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 适配已加入，尚待 Windows 实机验收；平台及限制见[支持范围](#支持范围)。
+当前版本 **0.9.2**，支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 适配已加入，尚待 Windows 实机验收；平台及限制见[支持范围](#支持范围)。
 
 ## 为什么做这个插件
 
@@ -44,7 +44,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 准备 Chrome 和一个支持的视频。第一次建议选择有字幕的视频，先体验阅读和记录，再按需配置 AI。
 
-使用成品包 `VideoNote-0.9.1-chrome.zip`，不需要安装 Node.js、pnpm 或本机组件。当前已生成本地交付包，尚未上传 GitHub Release。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
+使用成品包 `VideoNote-0.9.2-chrome.zip`，不需要安装 Node.js、pnpm 或本机组件。当前已生成本地交付包，尚未上传 GitHub Release。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
 
 ### 安装
 

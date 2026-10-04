@@ -1,6 +1,7 @@
 export const providers = [
   {
     id: 'deepseek',
+    keysUrl: 'https://platform.deepseek.com/api_keys',
     name: 'DeepSeek',
     aliases: ['deepseek', '深度求索'],
     baseUrl: 'https://api.deepseek.com',
@@ -10,6 +11,7 @@ export const providers = [
   },
   {
     id: 'zhipu',
+    keysUrl: 'https://bigmodel.cn/usercenter/proj-mgmt/apikeys',
     name: '智谱',
     aliases: ['智谱', '智谱ai', 'zhipu', 'bigmodel', 'glm'],
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
@@ -19,6 +21,7 @@ export const providers = [
   },
   {
     id: 'openai',
+    keysUrl: 'https://platform.openai.com/api-keys',
     name: 'OpenAI',
     aliases: ['openai', 'chatgpt', 'chat gpt', 'gpt'],
     baseUrl: 'https://api.openai.com/v1',

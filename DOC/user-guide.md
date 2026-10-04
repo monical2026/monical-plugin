@@ -4,7 +4,7 @@
 
 ## 安装扩展
 
-使用 `VideoNote-0.9.1-chrome.zip` 成品包，无需安装开发工具或本机组件。当前已生成本地交付包，尚未上传 GitHub Release；GitHub 的 Code → Download ZIP 仍是源码。
+使用 `VideoNote-0.9.2-chrome.zip` 成品包，无需安装开发工具或本机组件。当前已生成本地交付包，尚未上传 GitHub Release；GitHub 的 Code → Download ZIP 仍是源码。
 
 拿到成品后：
 
@@ -64,3 +64,11 @@
 先查看[常见问题](../README.md#常见问题)。本机组件连接失败时，检查组件是否安装，以及注册时的 Node 路径是否仍有效；技术排查见[开发说明](development.md)。
 
 仍无法解决时，到 [GitHub Issues](https://github.com/monical2026/YouTube---/issues) 提供版本、系统、浏览器、平台、复现步骤和错误提示。不要附带密钥或私人笔记。
+
+## 保存设置与更新安装包
+
+API Key 输入框下可直接进入 DeepSeek、智谱、OpenAI 或 Supadata 官方控制台。自定义服务需到对应服务商网站创建 Key，控制台网址不要填入 Base URL。
+
+点击保存后查看按钮附近结果。浏览器模式首次填写 Key 前先创建密钥库，之后每次新会话需解锁；失败时保留输入，按具体提示处理后再次保存。保存成功后连接显示“已保存”，Key 输入框清空并提示已安全保存。
+
+更新 ZIP：将新版 VideoNote 文件夹内的内容覆盖到之前加载的同一文件夹，保留原路径；进入 chrome://extensions 点击该扩展的重新加载，再刷新视频页。不要卸载旧扩展，以免删除本地记录。

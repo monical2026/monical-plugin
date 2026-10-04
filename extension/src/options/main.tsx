@@ -1,3 +1,4 @@
+import { vaultStatus } from '../browser-service/vault';
 import { ServiceMode } from './ServiceMode';
 import { backend, type Backend } from '../browser-service/storage';
 import { authorizeServices } from '../browser-service/network';
@@ -22,6 +23,10 @@ import { withDeadline } from './request';
 import { isProfileSaved } from './save-state';
 import { hasCodexConnection, removeProfile } from './profiles';
 function SettingsApp() {
+  const [saveResult, setSaveResult] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
   const [mode, setMode] = useState<Backend>('browser');
   const [settings, setSettings] = useState<Settings>(defaultSettings),
     [savedSettings, setSavedSettings] = useState<Settings>(defaultSettings),
@@ -56,6 +61,7 @@ function SettingsApp() {
     void load();
   }, []);
   function update(id: string, change: Partial<Profile>) {
+    setSaveResult(null);
     setFeedback((m) => ({ ...m, [id]: '' }));
     const previous = settings.profiles.find((p) => p.id === id);
     if (change.baseUrl !== undefined && change.baseUrl !== previous?.baseUrl) {
@@ -74,6 +80,7 @@ function SettingsApp() {
     }));
   }
   function add(kind: Profile['kind'], connection: 'api' | 'codex' = 'api') {
+    setSaveResult(null);
     const existing = settings.profiles.find((p) => p.connection === 'codex');
     if (connection === 'codex' && existing) {
       document
@@ -109,6 +116,7 @@ function SettingsApp() {
     );
   }
   function remove(id: string) {
+    setSaveResult(null);
     setSettings((s) => removeProfile(s, id));
     setKeys((k) => {
       const next = { ...k };
@@ -121,6 +129,7 @@ function SettingsApp() {
   }
   async function save() {
     setBusy(true);
+    setSaveResult(null);
     try {
       if (mode === 'browser')
         await authorizeServices(
@@ -128,6 +137,15 @@ function SettingsApp() {
             .filter((p) => p.connection !== 'codex')
             .map((p) => p.baseUrl),
         );
+      if (mode === 'browser' && Object.values(keys).some(Boolean)) {
+        const vault = await vaultStatus();
+        if (!vault.unlocked)
+          throw new Error(
+            vault.initialized
+              ? '密钥库已锁定：请先在“服务运行方式”输入密码并点击“解锁密钥库”，然后重新保存。已填写的 API Key 仍保留。'
+              : '请先在“服务运行方式”设置至少 10 个字符的密码并点击“创建密钥库”，然后重新保存。已填写的 API Key 仍保留。',
+          );
+      }
       const saved = settingsSchema.parse(
         await rpc({
           type: 'native',
@@ -140,8 +158,14 @@ function SettingsApp() {
       setSavedSettings(saved);
       setKeys({});
       setStatus('保存完成。');
+      setSaveResult({
+        ok: true,
+        text: '全部设置已保存，API Key 输入框已清空；下次无需重新填写。',
+      });
     } catch (e) {
-      setStatus(errorText(e));
+      const text = `保存失败：${errorText(e)}`;
+      setStatus(text);
+      setSaveResult({ ok: false, text });
     } finally {
       setBusy(false);
     }
@@ -256,6 +280,9 @@ function SettingsApp() {
                 保存全部设置
               </button>
             </div>
+            {saveResult && (
+              <p role={saveResult.ok ? 'status' : 'alert'}>{saveResult.text}</p>
+            )}
             <p className="muted">
               密钥输入后只在本次设置页内暂存；保存成功会清空输入框。浏览器模式使用密码加密；本机模式使用系统凭据。测试连接不会保存。
             </p>
@@ -276,7 +303,10 @@ function SettingsApp() {
                 update={update}
                 remove={remove}
                 test={test}
-                setKeys={setKeys}
+                setKeys={(value) => {
+                  setSaveResult(null);
+                  setKeys(value);
+                }}
                 clearFeedback={() =>
                   setFeedback((m) => ({ ...m, [profile.id]: '' }))
                 }
@@ -301,7 +331,10 @@ function SettingsApp() {
           </section>
           <ModelRouting
             settings={settings}
-            setSettings={setSettings}
+            setSettings={(value) => {
+              setSaveResult(null);
+              setSettings(value);
+            }}
             busy={busy}
           />
           <SubtitleCosts

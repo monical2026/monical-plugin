@@ -88,3 +88,53 @@ it('本机模式仍转发原 RPC，过期设置窗口不能覆盖另一模式', 
   ).rejects.toThrow('模式已');
   expect(fixture.chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
 });
+it('后台浏览器模式读取配置不依赖 Native Messaging，未配置字幕返回业务提示', async () => {
+  const { native } =
+    await import('../../extension/src/background/native-client');
+  expect(await native('settings', undefined)).toEqual(defaultSettings);
+  await expect(
+    native('transcript', { videoId: 'abcdefghijk', mode: 'native' }),
+  ).rejects.toThrow('选择对应服务');
+  expect(fixture.chrome.runtime.sendMessage).not.toHaveBeenCalled();
+});
+it('未解锁保存失败不丢配置，解锁后保存并重新读取会显示已保存', async () => {
+  const { readSettings } =
+    await import('../../extension/src/browser-service/settings');
+  const { isProfileSaved } =
+    await import('../../extension/src/options/save-state');
+  const request = {
+    settings: {
+      ...defaultSettings,
+      profiles: [
+        {
+          id: 'p',
+          kind: 'llm',
+          name: 'DeepSeek',
+          baseUrl: 'https://api.deepseek.com',
+          model: 'deepseek-flash',
+        },
+      ],
+    },
+    keys: { p: 'fixture-key' },
+  };
+  await expect(
+    rpc({
+      type: 'native',
+      operation: 'saveSettings',
+      serviceMode: 'browser',
+      payload: request,
+    }),
+  ).rejects.toThrow('解锁');
+  expect(await readSettings()).toEqual(defaultSettings);
+  expect(request.keys.p).toBe('fixture-key');
+  await unlockVault('fixture-password-123');
+  await rpc({
+    type: 'native',
+    operation: 'saveSettings',
+    serviceMode: 'browser',
+    payload: request,
+  });
+  const saved = await readSettings();
+  expect(saved.profiles[0].configured).toBe(true);
+  expect(isProfileSaved(saved.profiles[0], saved.profiles[0], '')).toBe(true);
+});

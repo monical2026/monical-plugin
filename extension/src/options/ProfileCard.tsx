@@ -34,6 +34,7 @@ export function ProfileCard({
   const provider = providerByUrl(profile.baseUrl);
   const namedProvider = providerByName(profile.name);
   const llm = profile.kind === 'llm';
+  const keysUrl = llm ? provider?.keysUrl : 'https://dash.supadata.ai/';
   const codex = profile.connection === 'codex';
   const change = (fields: Partial<Profile>) => update(profile.id, fields);
   return (
@@ -134,6 +135,15 @@ export function ProfileCard({
             )}
           />
           <p className="field-help">
+            {keysUrl ? (
+              <a href={keysUrl} target="_blank" rel="noreferrer">
+                前往 {llm ? provider?.name : 'Supadata'} 获取 API Key ↗
+              </a>
+            ) : (
+              '自定义服务：请到你所选服务商的控制台创建 API Key。'
+            )}
+          </p>
+          <p className="field-help">
             小叉仅清空本次输入；已保存的密钥不会被删除。更换 API
             地址后须填写新地址对应的密钥。
           </p>
@@ -185,7 +195,7 @@ export function ProfileCard({
           <div className="connection-feedback" role="status">
             {feedback[profile.id] ||
               (!ready
-                ? '请先连接本机组件。'
+                ? '服务设置尚未就绪，请查看上方提示。'
                 : !profile.model
                   ? '先获取列表或填写模型，再测试连接。'
                   : '获取列表不调用聊天模型；测试模型可能产生少量费用。')}
