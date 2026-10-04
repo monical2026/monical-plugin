@@ -49,7 +49,13 @@ function render(scrollToKey = null) {
   for (const group of groups) {
     const card = node('article', 'group-card'); card.style.setProperty('--tone', siteTone(group.key)); card.dataset.siteKey = group.key;
     const header = node('div', 'card-header');
-    const toggle = button('', 'group-toggle', `展开或收起 ${group.name}`, () => {
+    const direct = grouped && !selecting && group.tabs.length === 1;
+    const toggle = button('', 'group-toggle', direct ? `切换到 ${group.tabs[0].title || address(group.tabs[0])}` : `展开或收起 ${group.name}`, async () => {
+      if (direct) {
+        try { await api.activate(group.tabs[0]); if (!isExtension) message('演示模式：安装插件后将切换到真实标签'); }
+        catch { message('标签可能已关闭，请刷新后重试'); await refresh(); }
+        return;
+      }
       if (expanded.has(group.key)) {
         expanded.delete(group.key);
         render();
@@ -61,12 +67,21 @@ function render(scrollToKey = null) {
         render(group.key);
       }
     });
-    const isOpen = selecting || !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); toggle.setAttribute('aria-expanded', isOpen);
+    const isOpen = selecting || !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); if (!direct) toggle.setAttribute('aria-expanded', isOpen);
     const icon = pageIcon(group.tabs[0], 'site-icon', group.name.slice(0, 1).toUpperCase());
     toggle.append(icon);
-    const text = node('span', 'site-text'); text.append(node('strong', '', group.name), node('span', 'domain', group.host)); toggle.append(text, node('span', 'chevron', isOpen ? '−' : '+'));
+    const text = node('span', 'site-text'); text.append(node('strong', '', group.name), node('span', 'domain', group.host)); toggle.append(text, node('span', 'chevron', direct ? '↗' : isOpen ? '−' : '+'));
+    if (direct) toggle.title = `切换到 ${group.tabs[0].title || address(group.tabs[0])}\n${address(group.tabs[0])}`;
     header.append(toggle); if (grouped) card.append(header);
     const meta = node('div', 'card-meta'); meta.append(node('span', '', query.trim() ? `匹配 ${group.matched.length} 页 / 共 ${group.tabs.length} 页` : `${group.tabs.length} 个标签`));
+    if (direct) {
+      const details = button(isOpen ? '−' : '⋯', 'group-details', `展开或收起 ${group.name} 的页面操作`, () => {
+        if (expanded.has(group.key)) expanded.delete(group.key); else expanded.add(group.key);
+        render();
+      });
+      details.title = '页面操作：固定、声音与关闭';
+      details.setAttribute('aria-expanded', isOpen); header.append(details);
+    }
     if (grouped) {
       const closeGroup = button('×', 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null));
       closeGroup.title = `关闭整组 · ${group.tabs.length} 页`;
