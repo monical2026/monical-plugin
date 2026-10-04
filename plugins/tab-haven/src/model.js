@@ -49,3 +49,12 @@ export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = fa
   }
   return results;
 }
+
+// 所有网站共用同一份搜索结果，避免全选和展示范围不一致。
+export function matchingTabs(tabs, query) {
+  return groupsFor(tabs, query).flatMap(group => group.matched);
+}
+export function selectCurrentResults(selection, tabs, query) {
+  selection.clear();
+  for (const tab of matchingTabs(tabs, query)) selection.set(tab.id, address(tab));
+}
