@@ -1,3 +1,4 @@
+import { withAnalysisDiagnostic } from './analysis-diagnostic';
 import { applyTranslations } from './translation-results';
 import { z } from 'zod';
 import {
@@ -158,63 +159,84 @@ export function videoActions({
   }
   async function analyze() {
     if (!record) return;
-    await run('正在整理视频脉络…', async (token) => {
-      const workflow = {
-        runId: crypto.randomUUID(),
-        videoId: record.videoId,
-        source: sourceVersion(record.segments),
-      };
-      const batches = analysisBatches(record.segments);
-      const parts: Analysis[] = [];
-      for (const [index, segments] of batches.entries()) {
-        if (token !== generation.current) return;
-        setBusy(`正在整理视频脉络 · 第 ${index + 1} / ${batches.length} 部分`);
-        parts.push(
-          analysisSchema.parse(
-            await rpc({
-              type: 'native',
-              operation: 'generate',
-              payload: {
-                task: 'analyze',
-                segments: analysisInput(segments),
-                workflow,
+    await run('正在整理视频脉络…', (token) =>
+      withAnalysisDiagnostic(
+        record.videoId,
+        async (trace) => {
+          const workflow = {
+            runId: crypto.randomUUID(),
+            videoId: record.videoId,
+            source: sourceVersion(record.segments),
+          };
+          const batches = analysisBatches(record.segments);
+          trace('ui.batches', { count: batches.length });
+          const parts: Analysis[] = [];
+          for (const [index, segments] of batches.entries()) {
+            if (token !== generation.current) return;
+            setBusy(
+              `正在整理视频脉络 · 第 ${index + 1} / ${batches.length} 部分`,
+            );
+            parts.push(
+              analysisSchema.parse(
+                await rpc(
+                  {
+                    type: 'native',
+                    operation: 'generate',
+                    payload: {
+                      task: 'analyze',
+                      segments: analysisInput(segments),
+                      workflow,
+                    },
+                  },
+                  trace,
+                ),
+              ),
+            );
+            if (token !== generation.current) return;
+            setProgress(((index + 1) / batches.length) * 0.85);
+          }
+          trace('ui.merge');
+          const draft = mergeAnalyses(parts);
+          if (draft.formatVersion !== 3)
+            throw new Error(
+              '服务返回了旧版结构，请更新后再整理；已有结果仍保留',
+            );
+          setBusy('正在复核全片主线、关键点、金句与方法…');
+          const result = analysisSchema.parse(
+            await rpc(
+              {
+                type: 'native',
+                operation: 'generate',
+                payload: {
+                  task: 'reviewAnalysis',
+                  workflow,
+                  analysis: draft,
+                  segments: analysisInput(record.segments),
+                },
               },
-            }),
-          ),
-        );
-        if (token !== generation.current) return;
-        setProgress(((index + 1) / batches.length) * 0.85);
-      }
-      const draft = mergeAnalyses(parts);
-      if (draft.formatVersion !== 3)
-        throw new Error('服务返回了旧版结构，请更新后再整理；已有结果仍保留');
-      setBusy('正在复核全片主线、关键点、金句与方法…');
-      const result = analysisSchema.parse(
-        await rpc({
-          type: 'native',
-          operation: 'generate',
-          payload: {
-            task: 'reviewAnalysis',
-            workflow,
-            analysis: draft,
-            segments: analysisInput(record.segments),
-          },
-        }),
-      );
-      if (result.formatVersion !== 3)
-        throw new Error('全片复核返回旧结构，已有结果未覆盖');
-      if (token !== generation.current) return;
-      setProgress(1);
-      await mutate((r) => {
-        if (sourceVersion(r.segments) !== sourceVersion(record.segments))
-          throw new Error('整理期间逐字稿已修改，请重新整理；已有内容仍保留');
-        return {
-          ...r,
-          analysis: result,
-          analysisSource: sourceVersion(record.segments),
-        };
-      });
-    });
+              trace,
+            ),
+          );
+          if (result.formatVersion !== 3)
+            throw new Error('全片复核返回旧结构，已有结果未覆盖');
+          if (token !== generation.current) return;
+          setProgress(1);
+          trace('ui.save');
+          await mutate((r) => {
+            if (sourceVersion(r.segments) !== sourceVersion(record.segments))
+              throw new Error(
+                '整理期间逐字稿已修改，请重新整理；已有内容仍保留',
+              );
+            return {
+              ...r,
+              analysis: result,
+              analysisSource: sourceVersion(record.segments),
+            };
+          });
+        },
+        () => token === generation.current,
+      ),
+    );
   }
 
   return { run, getCaptions, translateLocal, llmTranslate, analyze };

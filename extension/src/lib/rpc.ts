@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from '../../../shared/src/ai/analysis-diagnostics';
 import { backend } from '../browser-service/storage';
 import { z } from 'zod';
 async function remote(input: unknown): Promise<unknown> {
@@ -12,7 +13,10 @@ export function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '操作失败，请重试';
 }
 
-export async function rpc(input: unknown): Promise<unknown> {
+export async function rpc(
+  input: unknown,
+  trace?: AnalysisTrace,
+): Promise<unknown> {
   const route = z
     .object({
       type: z.string(),
@@ -29,6 +33,7 @@ export async function rpc(input: unknown): Promise<unknown> {
     { mode: route.operation === 'saveSettings' ? 'exclusive' : 'shared' },
     async () => {
       const selected = await backend();
+      trace?.(`rpc.${selected}`);
       if (route.serviceMode && route.serviceMode !== selected)
         throw new Error('服务模式已在其他窗口变化，请重新加载设置');
       if (selected === 'native' || route.operation?.startsWith('obsidian'))
@@ -48,6 +53,7 @@ export async function rpc(input: unknown): Promise<unknown> {
       return browserService(
         route.type === 'settings' ? 'settings' : (route.operation ?? ''),
         route.payload,
+        trace,
       );
     },
   );

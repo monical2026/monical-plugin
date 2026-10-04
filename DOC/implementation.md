@@ -1,5 +1,12 @@
 # 当前实施状态
 
+## 0.9.5 · 脉络诊断与复核输出约束（待真实模型复测）
+
+已确认此前日志采集位置指引错误：浏览器模式通过面板内 rpc 动态加载 browserService，模型请求不必经过 Service Worker，所以后台 Network 和 fetch 钩子无法捕获面板请求。新增“复制脉络诊断”入口，记录实际路由、缓存命中、网络状态、响应大小、生成结束原因和复核校验字段类型；不记录凭据、服务地址、字幕、笔记或模型正文。浏览器模式诊断随错误保存；每视频最近一份、最多十个视频，每份最多 80 个事件，独立存储且失败不影响原业务。刷新后可在视频脉络页复制，自动剪贴板被拒绝时展示只读文本框。
+
+已确认复核请求此前同时包含完整脉络 JSON 模板与精简复核计划模板。拆分共用内容规则和任务输出模板，完整复核/章节复核/提炼复核分别提供唯一的本轮结构示例；说明数字索引、数组、必填及省略规则。格式不合格时报告具体路径、期望与实际类型，保持严格来源与内容校验，不自动猜测字段，不新增重试或付费请求。尚未收到用户真实失败响应，不能认定该冲突是此次报错的唯一原因。Obsidian 应用检测/直接连接需求仍待方案确定，本轮不改。
+
+
 ## 0.9.4 开发状态
 
 首主题范围错误已通过不完整编号回归复现，增加明确编号契约及一次定向校正；用户原模型回复未取得，不声称已复现其具体完整请求。知识库目录句柄持久化并通过后台查询权限后直接写入，首次安装自动打开设置页。浏览器 OPFS 实际文件及 IndexedDB 句柄验证已完成；真实 Windows Chrome 外部目录与用户模型待验收。详细结果见 test-feedback.md 的 0.9.4 节。
@@ -277,3 +284,12 @@ DeleteNoteButton 不再为 iconOnly 绕过确认；卡片垃圾桶与编辑器�
 ## 0.8.1 · Windows 兼容（2026-10-04，待 Windows 实机验收）
 
 保留 Mac 的钥匙串、数据目录、注册方式和界面布局，增加 Windows 凭据管理器、用户级 Chrome 本机组件注册、自带 Node 副本和 Obsidian 目录选择。构建按系统分派；设置显示对应系统凭据提示；本机 Codex 新增原生 exe 查找，.cmd 暂不支持。具体范围、文件职责及验收项见 [Windows 支持](windows-support.md)。未提供签名安装器，未发布或推送。
+
+
+### 0.9.5 变更文件职责
+
+- `shared/src/ai/analysis-diagnostics.ts`：安全的字段类型诊断及事件回调类型；`analysis-prompt.ts` 分离内容规则与完整输出模板；`analysis-review-plan.ts` 分阶段提供计划模板、报告结构错误；`analysis-review-request.ts` 按阶段选择模板与校验器。
+- `extension/src/ui/analysis-diagnostic.ts`：任务归属、限量持久化及失败隔离；`AnalysisDiagnosticButton.tsx`：自动/手工复制；`PanelControls.tsx`：面板和历史共用入口；`videoActions.ts`：整次脉络任务及保存/取消事件。
+- `extension/src/lib/rpc.ts`：记录真实运行模式并传递回调；`browser-service/service.ts`：区分分析/复核；`analysis-progress.ts`：缓存事件与新提示词缓存戳；`providers.ts`：模型返回及截断状态；`network.ts`：真实请求状态与大小，不暴露正文/请求头。
+- `tests/unit/analysis-diagnostic.test.ts`：结构/隐私/存储/并发/模板回归；`browser-analysis.test.ts`：实际调用链失败诊断；`video-actions.test.ts`：补 Chrome 环境，保留业务契约断言；`tests/browser/analysis-diagnostic.html` 和 `.tsx`：真实复制界面夹具。
+- 五个版本声明统一为 0.9.5；README、AGENTS 与相关设计、计划、指南和验证记录同步当前能力、操作步骤与待实机复测边界。

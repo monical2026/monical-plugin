@@ -1,3 +1,4 @@
+import { parseReviewPlan } from './analysis-diagnostics';
 import { assertTopicCoverage } from './analysis-coverage';
 import { z } from 'zod';
 import type { reviewMaterial } from './analysis-review';
@@ -48,16 +49,35 @@ export const planSchema = z.object({
     }),
   ),
 });
-export const reviewPlanInstructions = `本次只返回精简的复核计划，不输出上文完整脉络 JSON，未改文字由程序保留，禁止重复抄写整份材料。
+const reviewPlanRules = `本次只返回精简的复核计划，不输出上文完整脉络 JSON，未改文字由程序保留，禁止重复抄写整份材料。
 章节先检查是否只是同一完整解释的中间阶段。比如变化率、时间系数、圆周运动若共同回答同一个公式为何成立，就合为完整议题，不把每一步都保留成独立章节。此例不是当前材料的事实。
 所有 index/indexes 必须直接引用输入条目上显式标注的 index 字段，不要自行计数或猜数组序号，更不要与字幕 segmentId 混用。每个原条目最多进入一个组；可删除不符合要求的关键点、方法、金句、前置知识，但主题必须完整连续覆盖 1 到 segmentCount。
-summary 必须重新写出简短全片总结。
+summary 必须重新写出简短全片总结（最多 200 字符）。复核计划只采用下方结构：分组用 indexes 数字数组，保留序号用数字，不能返回完整脉络条目。所有顶层字段都必须提供，空数组写 []，不要用 null。可选文字字段不修改时直接省略，不要写 null。limitations、steps、understanding、role 等分条字段必须为字符串数组。
 topics：每项只写 startId/endId；需要改的字段才附上。合并或拆分造成范围变化时必须同时写新 title、introduction、keyPoints、clipVerdict、clipReason，并按需更新 problem/application。startId/endId 必须从 allowedBoundaryIds 列表中选择，不能取未列出的中间编号。合并应使用所合并章节的真实首末编号，不猜未知位置。
 knowledge：保留条目写 {indexes:[序号]}；语义同义合并时 indexes 列全部原序号，必须写整合后的 understanding/role，标题按需改；来源自动合并，顺序首项为主要讲解来源。不要丢不同条件。优先保留能串起全片主要问题与解法的关键点；同一核心概念的下位细节并入核心含义，不把所有推导小点都升格成全片关键点。
 methods：保留写 {indexes:[序号]}；合并时必须写整合后的 applicability/steps/limitations，保留必要条件，来源自动合并。去掉没有具体用法或只是重复要点的项目。
 prerequisites：只列保留条目的序号，去除非必要门槛及重复基础。
 quotes：只列合格候选的 {index:序号}；如候选开头指代不明，可截取同一原话内独立成立的连续子串，同时写 excerpt 和忠实 chinese。只选一句或两句，宁缺毋滥。“In both cases...”“depending on what you're trying to answer about it...”在没有具体对象时不能独立表达，应删除或取其中完整独立的原句。不要只因句子完整就认作金句。
-输出示例结构（序号不是建议选择）：{"summary":"全片总结","topics":[{"startId":"1","endId":"5"}],"knowledge":[{"indexes":[0]}],"methods":[{"indexes":[0]}],"prerequisites":[],"quotes":[{"index":0}]}`;
+`;
+export function reviewPlanInstructions(scope: 'full' | 'chapters' | 'details') {
+  const chapters = {
+    summary: '全片总结',
+    topics: [{ startId: '1', endId: '5' }],
+  };
+  const details = {
+    knowledge: [{ indexes: [0] }],
+    methods: [{ indexes: [0] }],
+    prerequisites: [],
+    quotes: [{ index: 0 }],
+  };
+  const example =
+    scope === 'chapters'
+      ? chapters
+      : scope === 'details'
+        ? details
+        : { ...chapters, ...details };
+  return `${reviewPlanRules}\n本轮只输出 ${Object.keys(example).join('、')} 字段，不输出其他顶层字段。只输出 JSON，结构示例（序号不是建议选择）：${JSON.stringify(example)}`;
+}
 function select<T>(items: T[], indexes: number[], seen: Set<number>) {
   return indexes.map((index) => {
     if (!items[index] || seen.has(index))
@@ -67,10 +87,7 @@ function select<T>(items: T[], indexes: number[], seen: Set<number>) {
   });
 }
 export function applyReviewPlan(input: unknown, data: Material) {
-  const parsed = planSchema.safeParse(input);
-  if (!parsed.success)
-    throw new Error('全片复核计划格式不完整，已有结果未覆盖');
-  const plan = parsed.data;
+  const plan = parseReviewPlan(planSchema, input, '全片复核计划');
   assertTopicCoverage(plan.topics, data.segmentCount);
   const seenKnowledge = new Set<number>(),
     seenMethods = new Set<number>();

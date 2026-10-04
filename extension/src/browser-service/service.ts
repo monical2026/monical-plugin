@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from '../../../shared/src/ai/analysis-diagnostics';
 import { analysisProgress } from './analysis-progress';
 import { z } from 'zod';
 import {
@@ -17,6 +18,7 @@ import { generation } from './generation';
 export async function browserService(
   operation: string,
   input: unknown,
+  trace?: AnalysisTrace,
 ): Promise<unknown> {
   const settings = await readSettings();
   if (operation === 'settings' || operation === 'status') return settings;
@@ -70,6 +72,7 @@ export async function browserService(
         llm(profile(settings.analyzeProfile, 'llm'), prompt),
       );
     if (task === 'analyze' || task === 'reviewAnalysis') {
+      trace?.(`browser.${task}`);
       const payload = parseAnalysisRequest(input);
       const selected = settings.profiles.find(
         (p) => p.id === settings.analyzeProfile && p.kind === 'llm',
@@ -82,11 +85,18 @@ export async function browserService(
         throw new Error(
           '当前脉络选中了本机 Codex。浏览器模式请改选 API 模型并保存，无需安装组件。',
         );
-      const generate = (prompt: string) => llm(selected, prompt);
-      return analysisProgress(input, selected, settings.revision, task, () =>
-        payload.task === 'reviewAnalysis'
-          ? reviewAnalysis(payload.analysis, payload.segments, generate)
-          : analyzeSegments(payload.segments, generate),
+      const generate = (prompt: string) =>
+        llm(selected, prompt, undefined, trace);
+      return analysisProgress(
+        input,
+        selected,
+        settings.revision,
+        task,
+        () =>
+          payload.task === 'reviewAnalysis'
+            ? reviewAnalysis(payload.analysis, payload.segments, generate)
+            : analyzeSegments(payload.segments, generate),
+        trace,
       );
     }
     const request = z

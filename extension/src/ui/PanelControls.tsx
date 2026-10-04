@@ -1,3 +1,4 @@
+import { AnalysisDiagnosticButton } from './AnalysisDiagnosticButton';
 import { ContentTabIcon } from './ContentTabIcon';
 import { HistoryReaderHeader } from '../history/HistoryReaderHeader';
 import { type Dispatch, type SetStateAction } from 'react';
@@ -141,6 +142,7 @@ export function PanelControls({
       {error && (
         <div role="alert" className="error">
           {error}
+
           {error.includes('Chrome 首次准备本地翻译') && (
             <button disabled={!!busy} onClick={() => void translateLocal()}>
               继续准备
@@ -148,6 +150,12 @@ export function PanelControls({
           )}
           <button onClick={() => setError('')}>关闭提示</button>
         </div>
+      )}
+      {record && (tab === 'analysis' || error) && (
+        <AnalysisDiagnosticButton
+          key={record.videoId + error}
+          videoId={record.videoId}
+        />
       )}
       {tab === 'transcript' && (
         <div className="toolbar">

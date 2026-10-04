@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from '../../../shared/src/ai/analysis-diagnostics';
 import { z } from 'zod';
 import { segmentSchema, type Profile } from '@youtube-note/shared';
 import { modelBody, modelText } from '../../../shared/src/ai/model';
@@ -15,19 +16,44 @@ export async function llm(
   profile: Profile,
   prompt: string,
   temporaryKey?: string,
+  trace?: AnalysisTrace,
 ) {
   if (profile.connection === 'codex')
     throw new Error('本机 Codex 需要本机组件');
+  trace?.('model.credentials');
   const key = temporaryKey ?? (await profileKey(profile));
-  return guardedModelRequest({ profile, prompt }, async () =>
-    modelText(
-      await requestJson(
-        apiUrl(profile.baseUrl, 'chat/completions'),
-        { Authorization: `Bearer ${key}` },
-        modelBody(profile, prompt),
-      ),
-    ),
-  );
+  trace?.('model.request');
+  return guardedModelRequest({ profile, prompt }, async () => {
+    const data = await requestJson(
+      apiUrl(profile.baseUrl, 'chat/completions'),
+      { Authorization: `Bearer ${key}` },
+      modelBody(profile, prompt),
+      90000,
+      trace,
+    );
+    const finish = z
+      .object({
+        choices: z.array(
+          z.object({
+            finish_reason: z.string().nullable().optional(),
+          }),
+        ),
+      })
+      .safeParse(data);
+    const reason = finish.success
+      ? finish.data.choices[0]?.finish_reason
+      : undefined;
+    trace?.(
+      reason === 'length'
+        ? 'model.truncated'
+        : reason === 'stop'
+          ? 'model.stop'
+          : 'model.finish.unknown',
+    );
+    const text = modelText(data);
+    trace?.('model.text', { characters: text.length });
+    return text;
+  });
 }
 export async function transcript(profile: Profile, videoId: string) {
   if (!/^[\w-]{11}$/.test(videoId)) throw new Error('视频标识无效');
