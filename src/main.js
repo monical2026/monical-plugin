@@ -215,8 +215,22 @@ document.addEventListener('keydown', event => {
 });
 async function refresh() {
   const request = ++generation;
-  try { const loaded = await api.list(); if (request !== generation) return; const next = loaded.filter(tab => eligible(tab, ownOrigin)); const state = JSON.stringify(next); if (state !== lastState) { tabs = next; lastState = state; render(); } }
-  catch { message('读取标签失败，请点击刷新重试'); $('#summary').textContent = '暂时无法读取标签'; }
+  const retry = $('#retry-tabs');
+  retry.disabled = true;
+  try {
+    const loaded = await api.list();
+    if (request !== generation) return;
+    const next = loaded.filter(tab => eligible(tab, ownOrigin));
+    const state = JSON.stringify(next);
+    if (state !== lastState) { tabs = next; lastState = state; render(); }
+    $('#load-error').hidden = true;
+  } catch {
+    if (request !== generation) return;
+    $('#load-error').hidden = false;
+    if (lastState === null) $('#summary').textContent = '暂时无法读取标签';
+  } finally {
+    if (request === generation) retry.disabled = false;
+  }
 }
 $('#confirm-action').addEventListener('click', async () => {
   if (busy || !pending) return;
@@ -240,7 +254,7 @@ $('#close-selected').addEventListener('click', () => {
 });
 $('#review-duplicates').addEventListener('click', () => { const snapshot = duplicateSets(tabs).flatMap(set => set.remove); if (snapshot.length) showConfirm(snapshot, `清理 ${snapshot.length} 个重复标签？`, true); });
 $('#filter').addEventListener('input', () => render());
-$('#refresh').addEventListener('click', refresh);
+$('#retry-tabs').addEventListener('click', refresh);
 $('#search').addEventListener('submit', event => { const input = $('#web-query'); if (!input.value.trim()) { event.preventDefault(); input.focus(); } else input.value = input.value.trim(); });
 $('#demo-note').hidden = isExtension;
 let refreshTimer;
