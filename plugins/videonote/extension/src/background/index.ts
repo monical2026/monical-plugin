@@ -1,0 +1,327 @@
+import { fetchCaptions } from './captions';
+import {
+  pageSource,
+  matchesVideoPage,
+  videoSource,
+  videoUrl,
+} from '@youtube-note/shared';
+import { exportDownloadUrl, exportDownloadFilename } from './download-export';
+import { captureShortcut, supportedUrl } from './shortcuts';
+import { createCaptionCache } from './caption-cache';
+import { matchesExtensionPage } from './origin';
+import { z } from 'zod';
+import { requestSchema, type VideoContext } from '@youtube-note/shared';
+import { openHistory, openVideoTime } from './history';
+import { load, save, listHistory, deleteHistory } from '../storage/database';
+import { currentSegment } from '../segmentation';
+import { native } from './native-client';
+const contexts = new Map<number, VideoContext>();
+const ports = new Set<chrome.runtime.Port>();
+const cachedCaptions = createCaptionCache(load, save);
+function isUi(sender: chrome.runtime.MessageSender) {
+  return matchesExtensionPage(sender.url, chrome.runtime.id, 'panel.html');
+}
+function isSettings(sender: chrome.runtime.MessageSender) {
+  return matchesExtensionPage(sender.url, chrome.runtime.id, 'options.html');
+}
+function sourceTab(sender: chrome.runtime.MessageSender, explicit?: number) {
+  return isUi(sender) && explicit !== undefined ? explicit : sender.tab?.id;
+}
+chrome.runtime.onConnect.addListener((port) => {
+  if (!port.sender || !isUi(port.sender)) return;
+  ports.add(port);
+  port.onDisconnect.addListener(() => ports.delete(port));
+});
+function broadcast(tabId: number, context: VideoContext | null) {
+  for (const p of ports) {
+    if (p.sender?.tab?.id === tabId || p.name === `video:${tabId}`) {
+      try {
+        p.postMessage(context);
+      } catch {
+        ports.delete(p);
+      }
+    }
+  }
+}
+function recordChanged(videoId: string, revision: number) {
+  for (const port of ports) {
+    try {
+      port.postMessage({ type: 'recordChanged', videoId, revision });
+    } catch {
+      ports.delete(port);
+    }
+  }
+}
+async function captions(videoId: string, tabId: number) {
+  const context = contexts.get(tabId);
+  if (context?.videoId !== videoId) throw new Error('视频已切换，请重新打开');
+  const cached = await load(videoId);
+  if (cached.segments.length) return cached.segments;
+  return fetchCaptions(context, tabId);
+}
+async function capture(tabId: number) {
+  const context = contexts.get(tabId);
+  if (!context || context.live || context.ad)
+    throw new Error('当前不能定位普通视频的正片时间');
+  const record = await load(context.videoId);
+  let note = record.notes.find((n) => n.draft);
+  if (!note) {
+    const segment = currentSegment(record.segments, context.currentMs);
+    note = {
+      id: crypto.randomUUID(),
+      videoId: context.videoId,
+      title: context.title,
+      startMs: context.currentMs,
+      segmentId: segment?.id ?? '',
+      sourceRevision: segment?.revision ?? 0,
+      original: segment?.original ?? '',
+      translated: segment?.translated ?? '',
+      thought: '',
+      question: '',
+      revision: 0,
+      draft: true,
+      updatedAt: Date.now(),
+    };
+    const saved = await save(
+      { ...record, title: context.title, notes: [...record.notes, note] },
+      record.revision,
+    );
+    recordChanged(saved.videoId, saved.revision);
+  }
+  await chrome.tabs.sendMessage(tabId, { type: 'capture', noteId: note.id });
+}
+async function handle(
+  input: unknown,
+  sender: chrome.runtime.MessageSender,
+): Promise<unknown> {
+  if (sender.id !== chrome.runtime.id) throw new Error('来源不被允许');
+  const r = requestSchema.parse(input);
+  const ui = isUi(sender),
+    settings = isSettings(sender);
+  const tabId = sourceTab(sender, 'tabId' in r ? r.tabId : undefined);
+  if (
+    r.type === 'invalidate' &&
+    sender.frameId === 0 &&
+    !!sender.url &&
+    ['https://www.youtube.com', 'https://www.bilibili.com'].includes(
+      new URL(sender.url).origin,
+    ) &&
+    tabId !== undefined
+  ) {
+    contexts.delete(tabId);
+    broadcast(tabId, null);
+    return true;
+  }
+  if (r.type === 'context') {
+    if (!pageSource(sender.url) || sender.frameId !== 0 || tabId === undefined)
+      throw new Error('视频来源无效');
+    if (!matchesVideoPage(sender.url, r.context.videoId))
+      throw new Error('视频上下文不一致');
+    contexts.set(tabId, r.context);
+    broadcast(tabId, r.context);
+    return true;
+  }
+  if (!ui && !settings) throw new Error('此操作仅允许插件界面调用');
+  if (r.type === 'openSettings') {
+    await chrome.runtime.openOptionsPage();
+    return true;
+  }
+  if (r.type === 'getContext')
+    return {
+      context: tabId === undefined ? null : (contexts.get(tabId) ?? null),
+      tabId,
+    };
+  if (r.type === 'deleteHistory') {
+    const removed = await deleteHistory(r.videoId);
+    recordChanged(removed.videoId, removed.revision);
+    return true;
+  }
+  if (r.type === 'downloadExport') {
+    try {
+      return await chrome.downloads.download({
+        url: exportDownloadUrl(r.dataUrl, r.filename),
+        filename: r.filename,
+        saveAs: true,
+        conflictAction: 'uniquify',
+      });
+    } catch (error) {
+      if (error instanceof Error && /cancel/i.test(error.message)) return null;
+      throw error;
+    }
+  }
+  if (r.type === 'listHistory') return listHistory();
+  if (r.type === 'openHistory') return openHistory(r.videoId);
+  if (r.type === 'openVideoTime') return openVideoTime(r.videoId, r.startMs);
+  if (r.type === 'load') return load(r.videoId);
+  if (r.type === 'save') {
+    const saved = await save(r.record, r.expectedRevision);
+    recordChanged(saved.videoId, saved.revision);
+    return saved;
+  }
+  if (r.type === 'seek') {
+    if (tabId === undefined) throw new Error('找不到视频标签');
+    const response: unknown = await chrome.tabs.sendMessage(tabId, { ...r });
+    if (
+      !response ||
+      typeof response !== 'object' ||
+      !('ok' in response) ||
+      !response.ok
+    )
+      throw new Error('无法跳转播放，请确认视频仍在当前页面且不是广告');
+    return true;
+  }
+  if (r.type === 'openReader') return openHistory(r.videoId);
+  if (r.type === 'returnVideo') {
+    let target: chrome.tabs.Tab | undefined;
+    if (r.tabId !== undefined) {
+      try {
+        target = await chrome.tabs.get(r.tabId);
+      } catch {
+        /* 原标签已关闭，下面重新打开。 */
+      }
+    }
+    const url = videoUrl(r.videoId);
+    if (
+      !target?.id ||
+      !target.url ||
+      !matchesVideoPage(target.url, r.videoId)
+    ) {
+      await chrome.tabs.create({ url });
+    } else {
+      await chrome.tabs.update(target.id, { active: true });
+      if (target.windowId !== undefined)
+        await chrome.windows.update(target.windowId, { focused: true });
+    }
+    return true;
+  }
+  if (r.type === 'settings') return native('settings', {});
+  if (r.type === 'native') {
+    if (!settings && ['saveSettings', 'probe', 'models'].includes(r.operation))
+      throw new Error('只有设置页可以管理连接');
+    if (
+      [
+        'prepareGeneration',
+        'confirmGeneration',
+        'validateBrowserGeneration',
+      ].includes(r.operation)
+    ) {
+      const payload = z
+        .object({ videoId: z.string(), durationMs: z.number() })
+        .parse(r.payload);
+      if (videoSource(payload.videoId).platform !== 'youtube')
+        throw new Error('此平台的音频转写尚未接入');
+      const ctx = tabId === undefined ? null : contexts.get(tabId);
+      if (
+        !ctx ||
+        ctx.videoId !== payload.videoId ||
+        ctx.durationMs !== payload.durationMs ||
+        ctx.live
+      )
+        throw new Error('当前视频与生成确认不一致');
+    }
+    if (r.operation === 'validateBrowserGeneration') return true;
+    return native(r.operation, r.payload);
+  }
+  if (r.type === 'captions') {
+    if (tabId === undefined) throw new Error('找不到视频标签');
+    return cachedCaptions(r.videoId, () => captions(r.videoId, tabId));
+  }
+  throw new Error('不支持的操作');
+}
+chrome.runtime.onMessage.addListener((input: unknown, sender, respond) => {
+  void handle(input, sender).then(
+    (data) => respond({ data }),
+    (error) =>
+      respond({ error: error instanceof Error ? error.message : '请求失败' }),
+  );
+  return true;
+});
+chrome.commands.onCommand.addListener((command, tab) => {
+  void captureShortcut(command, tab, capture).catch(() => {
+    void chrome.action.setBadgeText({ text: '!' });
+    void chrome.action.setTitle({ title: '快捷笔记未保存，请刷新视频后重试' });
+  });
+});
+async function restoreContent(tabId: number) {
+  const tab = await chrome.tabs.get(tabId);
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'MAIN',
+    files: [
+      pageSource(tab.url)?.platform === 'bilibili'
+        ? 'bilibili-bridge.js'
+        : 'bridge.js',
+    ],
+  });
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['content.js'],
+  });
+}
+chrome.action.onClicked.addListener((tab) => {
+  if (!supportedUrl(tab.url)) {
+    void openHistory().catch(() =>
+      chrome.action.setTitle({ title: '历史记录未能打开，请重试' }),
+    );
+    return;
+  }
+  if (tab.id === undefined) return;
+  const tabId = tab.id;
+  void (async () => {
+    let opened = false;
+    try {
+      opened =
+        (await chrome.tabs.sendMessage(tabId, { type: 'toggle' }))?.ok === true;
+    } catch {
+      /* 扩展更新后旧页面缺少有效接收端，重新挂载。 */
+    }
+    if (!opened) {
+      await restoreContent(tabId);
+      await chrome.tabs.sendMessage(tabId, { type: 'toggle' });
+    }
+  })().catch(() =>
+    chrome.action.setTitle({ tabId, title: '视频尚未准备好，请稍后再次打开' }),
+  );
+});
+chrome.runtime.onInstalled.addListener((details) => {
+  if (
+    details.reason === 'update' &&
+    details.previousVersion &&
+    /^0\.[0-8]\./.test(details.previousVersion)
+  ) {
+    void chrome.storage.local
+      .get('serviceBackend')
+      .then(async (current) => {
+        if (!current.serviceBackend)
+          await chrome.storage.local.set({ serviceBackend: 'native' });
+      })
+      .catch(() =>
+        chrome.action.setTitle({ title: '服务模式恢复失败，请在设置页确认' }),
+      );
+  }
+  void chrome.tabs
+    .query({
+      url: [
+        'https://www.youtube.com/watch*',
+        'https://www.bilibili.com/video/*',
+      ],
+    })
+    .then(async (tabs) => {
+      for (const tab of tabs)
+        if (tab.id !== undefined && supportedUrl(tab.url))
+          await restoreContent(tab.id);
+    })
+    .catch(() => chrome.action.setTitle({ title: '点击图标恢复当前视频入口' }));
+});
+chrome.tabs.onRemoved.addListener((id) => contexts.delete(id));
+chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+  if (details.frameId === 0) {
+    contexts.delete(details.tabId);
+    broadcast(details.tabId, null);
+  }
+});
+
+chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
+  const filename = exportDownloadFilename(item, chrome.runtime.id);
+  suggest(filename ? { filename, conflictAction: 'uniquify' } : undefined);
+});
