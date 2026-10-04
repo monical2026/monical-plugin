@@ -1,4 +1,6 @@
 import './style.css';
+import './sidebar.js';
+import { preferences } from './preferences.js';
 import { version } from '../package.json';
 import { api, isExtension } from './api.js';
 import { address, eligible, groupsFor, duplicateSets, closeSnapshot } from './model.js';
@@ -26,7 +28,10 @@ function pageIcon(tab, className, fallback) {
 function render(scrollToKey = null) {
   const query = $('#filter').value;
   retainOrder(groupsFor(tabs), siteOrder);
-  const groups = retainOrder(groupsFor(tabs, query), siteOrder);
+  const grouped = preferences().grouped;
+  const filtered = groupsFor(tabs, query);
+  const matchedIds = new Set(filtered.flatMap(group => group.matched.map(tab => tab.id)));
+  const groups = grouped ? retainOrder(filtered, siteOrder) : (matchedIds.size ? [{ key: 'all', name: '全部页面', host: '', tabs, matched: tabs.filter(tab => matchedIds.has(tab.id)) }] : []);
   const duplicates = duplicateSets(tabs), duplicateIds = new Set(duplicates.flatMap(set => set.remove.map(tab => tab.id)));
   $('#total').textContent = tabs.length;
   $('#summary').textContent = `${groupsFor(tabs).length} 个网站 · ${new Set(tabs.map(tab => tab.windowId)).size} 个窗口 · 为每一个标签找到位置`;
@@ -49,13 +54,13 @@ function render(scrollToKey = null) {
         render(group.key);
       }
     });
-    const isOpen = expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); toggle.setAttribute('aria-expanded', isOpen);
+    const isOpen = !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); toggle.setAttribute('aria-expanded', isOpen);
     const icon = pageIcon(group.tabs[0], 'site-icon', group.name.slice(0, 1).toUpperCase());
     toggle.append(icon);
     const text = node('span', 'site-text'); text.append(node('strong', '', group.name), node('span', 'domain', group.host)); toggle.append(text, node('span', 'chevron', isOpen ? '−' : '+'));
-    header.append(toggle); card.append(header);
+    header.append(toggle); if (grouped) card.append(header);
     const meta = node('div', 'card-meta'); meta.append(node('span', '', query.trim() ? `匹配 ${group.matched.length} 页 / 共 ${group.tabs.length} 页` : `${group.tabs.length} 个标签`));
-    meta.append(button(`关闭全部 ${group.tabs.length} 页`, 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null)));
+    if (grouped) meta.append(button(`关闭全部 ${group.tabs.length} 页`, 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null)));
     card.append(meta);
     if (isOpen) {
       const list = node('ul', 'tab-list');
@@ -121,6 +126,7 @@ $('#demo-note').hidden = isExtension;
 let refreshTimer;
 api.subscribe(() => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 80); });
 window.addEventListener('focus', refresh);
+window.addEventListener('preferences-changed', () => render());
 await refresh();
 
 const versionLabel = node('span', 'version-label', `v${version}`);
