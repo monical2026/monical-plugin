@@ -30,3 +30,5 @@
 #load-error{margin:0 0 18px;padding:12px 16px;border:1px solid #e1d8c6;border-radius:12px;background:#faf6ed;color:#766044;font-size:14px}#load-error button{margin-left:12px;padding:5px 12px;border:1px solid #d6cbb6;border-radius:8px;background:transparent}
 
 .group-details{flex-shrink:0;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#84917d;font-size:20px}.group-details:hover{background:#edf3e9;color:#365c47}
+
+#pinned-option{display:flex;align-items:center;gap:9px;font-size:13px;line-height:1.6;margin-top:12px}#include-pinned{accent-color:#52775e;width:16px;height:16px}.confirm-item.is-kept{color:#52775e;background:#eaf0e4;border-radius:6px;padding:8px}

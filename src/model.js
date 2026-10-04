@@ -36,7 +36,7 @@ export function groupsFor(tabs, query = '') {
   return [...groups.values()].map(group => ({ ...group, matched: group.tabs.filter(tab => `${group.name} ${tab.title || ''} ${address(tab)}`.toLocaleLowerCase().includes(needle)) })).filter(group => group.matched.length).sort((a, b) => b.tabs.length - a.tabs.length || a.name.localeCompare(b.name));
 }
 // 执行时重新核对地址，跳过已导航、已关闭或变成仪表盘的标签。
-export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = false, onClosed = () => {}) {
+export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = false, onClosed = () => {}, protectPinned = false) {
   const current = (await api.list()).filter(tab => eligible(tab, ownOrigin));
   const byId = new Map(current.map(tab => [tab.id, tab]));
   const selected = new Set(snapshot.map(tab => tab.id));
@@ -44,7 +44,7 @@ export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = fa
   for (const original of snapshot) {
     const tab = byId.get(original.id);
     const hasSurvivor = !duplicateOnly || current.some(other => !selected.has(other.id) && duplicateKey(other) === duplicateKey(tab || {}) && duplicateKey(other));
-    if (!tab || address(tab) !== address(original) || !hasSurvivor) { results.skipped++; continue; }
+    if (!tab || (protectPinned && tab.pinned) || address(tab) !== address(original) || !hasSurvivor) { results.skipped++; continue; }
     try { await api.remove(tab.id); results.closed++; onClosed({ ...tab }); } catch { results.failed++; }
   }
   return results;
