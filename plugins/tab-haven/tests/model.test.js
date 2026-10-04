@@ -58,3 +58,12 @@ test('全选关键词结果跨越所有网站，仅选择匹配项并替换旧�
  selectCurrentResults(selected,items,'旅行');assert.deepEqual([...selected.keys()],[5]);
  selectCurrentResults(selected,items,'不存在');assert.equal(selected.size,0);
 });
+test('状态筛选与关键词取交集，静音不计出声，全选仅匹配但组快照保留', async () => {
+ const { matchingTabs, selectCurrentResults }=await import('../src/model.js');
+ const tabs=[tab(1,'https://x.com/a',{title:'硬件',audible:true,pinned:true}),tab(2,'https://x.com/b',{title:'硬件',audible:true,mutedInfo:{muted:true}}),tab(3,'https://y.com/c',{title:'旅行',pinned:true})];
+ assert.deepEqual(matchingTabs(tabs,'硬件','audible').map(t=>t.id),[1]);
+ assert.deepEqual(matchingTabs(tabs,'硬件','pinned').map(t=>t.id),[1]);
+ assert.equal(matchingTabs(tabs,'','pinned').length,2);
+ assert.equal(groupsFor(tabs,'硬件','audible')[0].tabs.length,2);
+ const selected=new Map();selectCurrentResults(selected,tabs,'硬件','audible');assert.deepEqual([...selected.keys()],[1]);
+});
