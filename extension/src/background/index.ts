@@ -198,7 +198,13 @@ async function handle(
   if (r.type === 'native') {
     if (!settings && ['saveSettings', 'probe', 'models'].includes(r.operation))
       throw new Error('只有设置页可以管理连接');
-    if (['prepareGeneration', 'confirmGeneration'].includes(r.operation)) {
+    if (
+      [
+        'prepareGeneration',
+        'confirmGeneration',
+        'validateBrowserGeneration',
+      ].includes(r.operation)
+    ) {
       const payload = z
         .object({ videoId: z.string(), durationMs: z.number() })
         .parse(r.payload);
@@ -213,6 +219,7 @@ async function handle(
       )
         throw new Error('当前视频与生成确认不一致');
     }
+    if (r.operation === 'validateBrowserGeneration') return true;
     return native(r.operation, r.payload);
   }
   if (r.type === 'captions') {
@@ -276,7 +283,22 @@ chrome.action.onClicked.addListener((tab) => {
     chrome.action.setTitle({ tabId, title: '视频尚未准备好，请稍后再次打开' }),
   );
 });
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  if (
+    details.reason === 'update' &&
+    details.previousVersion &&
+    /^0\.[0-8]\./.test(details.previousVersion)
+  ) {
+    void chrome.storage.local
+      .get('serviceBackend')
+      .then(async (current) => {
+        if (!current.serviceBackend)
+          await chrome.storage.local.set({ serviceBackend: 'native' });
+      })
+      .catch(() =>
+        chrome.action.setTitle({ title: '服务模式恢复失败，请在设置页确认' }),
+      );
+  }
   void chrome.tabs
     .query({
       url: [

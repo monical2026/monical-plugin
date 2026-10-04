@@ -1,5 +1,7 @@
 # Windows 支持（0.8.1）
 
+> 0.9.1：普通 Windows 用户可使用成品 ZIP 的浏览器模式，无需下文本机组件开发环境；安装见 [user-guide.md](user-guide.md)。下文仅适用于可选本机能力。Windows 实机验收仍待完成。
+
 ## 范围与当前状态
 
 用户要求保留原有 Mac 方案，在同一插件中增加 Windows 能力。0.8.1 已接入 Windows 构建、Chrome 本机组件注册、凭据管理器、配置目录和 Obsidian 文件夹选择，界面、笔记数据协议及 Mac 存储位置不变。

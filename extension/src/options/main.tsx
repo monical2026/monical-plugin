@@ -1,3 +1,6 @@
+import { ServiceMode } from './ServiceMode';
+import { backend, type Backend } from '../browser-service/storage';
+import { authorizeServices } from '../browser-service/network';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { z } from 'zod';
@@ -19,27 +22,33 @@ import { withDeadline } from './request';
 import { isProfileSaved } from './save-state';
 import { hasCodexConnection, removeProfile } from './profiles';
 function SettingsApp() {
+  const [mode, setMode] = useState<Backend>('browser');
   const [settings, setSettings] = useState<Settings>(defaultSettings),
     [savedSettings, setSavedSettings] = useState<Settings>(defaultSettings),
     [keys, setKeys] = useState<Record<string, string>>({}),
-    [status, setStatus] = useState('正在连接本机组件…'),
+    [status, setStatus] = useState('正在读取服务设置…'),
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
     [feedback, setFeedback] = useState<Record<string, string>>({}),
     [models, setModels] = useState<Record<string, string[]>>({});
   async function load() {
     try {
+      const selectedMode = await backend();
+      setMode(selectedMode);
       const loaded = settingsSchema.parse(await rpc({ type: 'settings' }));
       setSettings(loaded);
       setSavedSettings(loaded);
       setReady(true);
       const platform = await chrome.runtime.getPlatformInfo();
       setStatus(
-        platform.os === 'win'
-          ? '本机组件已连接。密钥保存在 Windows 凭据管理器。'
-          : '本机组件已连接。密钥保存在 macOS 钥匙串。',
+        selectedMode === 'browser'
+          ? '浏览器模式已就绪，无需安装本机组件。'
+          : platform.os === 'win'
+            ? '本机组件已连接。密钥保存在 Windows 凭据管理器。'
+            : '本机组件已连接。密钥保存在 macOS 钥匙串。',
       );
     } catch (e) {
+      setReady(false);
       setStatus(errorText(e));
     }
   }
@@ -107,16 +116,23 @@ function SettingsApp() {
       return next;
     });
     setStatus(
-      '已移除此连接，点击保存全部设置后生效；不会删除笔记。原系统凭据条目保留。',
+      '已移除此连接，点击保存全部设置后生效；不会删除笔记。原密钥条目保留。',
     );
   }
   async function save() {
     setBusy(true);
     try {
+      if (mode === 'browser')
+        await authorizeServices(
+          settings.profiles
+            .filter((p) => p.connection !== 'codex')
+            .map((p) => p.baseUrl),
+        );
       const saved = settingsSchema.parse(
         await rpc({
           type: 'native',
           operation: 'saveSettings',
+          serviceMode: mode,
           payload: { settings, keys },
         }),
       );
@@ -143,13 +159,19 @@ function SettingsApp() {
         : '正在获取模型列表…',
     );
     try {
+      if (mode === 'browser') await authorizeServices([profile.baseUrl]);
       const result = await withDeadline(
         rpc({
           type: 'native',
           operation,
+          serviceMode: mode,
           payload: { profile, key: keys[profile.id] || undefined },
         }),
-        profile.connection === 'codex' ? 125000 : 35000,
+        profile.connection === 'codex'
+          ? 125000
+          : mode === 'browser'
+            ? 95000
+            : 35000,
       );
       if (operation === 'models' && profile.connection === 'codex') {
         z.object({ loggedIn: z.literal(true) }).parse(result);
@@ -192,6 +214,15 @@ function SettingsApp() {
       <div className="settings-layout">
         <SettingsNav />
         <div>
+          <ServiceMode
+            onChange={async (selected) => {
+              setMode(selected);
+              setKeys({});
+              setModels({});
+              setFeedback({});
+              await load();
+            }}
+          />
           <div className="notice" role="status">
             {status}
             {ready && (
@@ -226,7 +257,7 @@ function SettingsApp() {
               </button>
             </div>
             <p className="muted">
-              密钥输入后只在本次设置页内暂存；保存成功会清空输入框。测试连接不会保存。
+              密钥输入后只在本次设置页内暂存；保存成功会清空输入框。浏览器模式使用密码加密；本机模式使用系统凭据。测试连接不会保存。
             </p>
             {settings.profiles.map((profile) => (
               <ProfileCard
@@ -256,7 +287,7 @@ function SettingsApp() {
                 添加 LLM
               </button>
               <button
-                disabled={busy || !ready}
+                disabled={busy || !ready || mode === 'browser'}
                 onClick={() => add('llm', 'codex')}
               >
                 {hasCodexConnection(settings)
@@ -296,13 +327,14 @@ function SettingsApp() {
           </section>
           <ShortcutSettings />
           <section id="component">
-            <h2>本机组件</h2>
+            <h2>本机组件（可选）</h2>
             <p>
               Chrome
               按需启动组件以访问系统凭据存储和外部服务，不需要长期运行后台程序。
             </p>
             <p>
-              首次安装请按项目开发说明中的本机组件注册步骤操作，再点击重新连接。
+              普通学习功能无需此组件。需要本机 Codex、系统钥匙串或 Obsidian
+              直接写入时，再按开发说明安装。
             </p>
             <button disabled={busy} onClick={() => void load()}>
               重新连接

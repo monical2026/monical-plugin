@@ -4,6 +4,7 @@ import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { buildWindowsNative } from './windows-native.mjs';
 const root = process.cwd();
+const extensionOnly = process.argv.includes('--extension-only');
 const version = JSON.parse(
   await readFile(resolve(root, 'package.json'), 'utf8'),
 ).version;
@@ -23,7 +24,7 @@ await build({
   root: resolve(root, 'extension'),
   build: {
     outDir: output,
-    emptyOutDir: false,
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         panel: resolve(root, 'extension/panel.html'),
@@ -56,30 +57,32 @@ await copyFile(
   resolve(root, 'extension/manifest.json'),
   resolve(output, 'manifest.json'),
 );
-await build({
-  configFile: false,
-  ssr: { noExternal: true },
-  build: {
-    ssr: resolve(root, 'service/src/host.ts'),
-    outDir: resolve(root, 'service/dist'),
-    emptyOutDir: false,
-    rollupOptions: { output: { entryFileNames: 'host.mjs' } },
-  },
-});
-await mkdir(resolve(root, 'service/dist'), { recursive: true });
-if (process.platform === 'win32') {
-  await buildWindowsNative(root);
-} else if (process.platform === 'darwin') {
-  const swift = spawnSync(
-    'swiftc',
-    [
-      resolve(root, 'service/native/keychain/bridge.swift'),
-      '-o',
-      resolve(root, 'service/dist/keychain-bridge'),
-    ],
-    { stdio: 'inherit' },
-  );
-  if (swift.status !== 0) throw new Error('钥匙串组件构建失败');
-} else {
-  throw new Error('本机组件目前仅支持 macOS 和 Windows 构建');
+if (!extensionOnly) {
+  await build({
+    configFile: false,
+    ssr: { noExternal: true },
+    build: {
+      ssr: resolve(root, 'service/src/host.ts'),
+      outDir: resolve(root, 'service/dist'),
+      emptyOutDir: false,
+      rollupOptions: { output: { entryFileNames: 'host.mjs' } },
+    },
+  });
+  await mkdir(resolve(root, 'service/dist'), { recursive: true });
+  if (process.platform === 'win32') {
+    await buildWindowsNative(root);
+  } else if (process.platform === 'darwin') {
+    const swift = spawnSync(
+      'swiftc',
+      [
+        resolve(root, 'service/native/keychain/bridge.swift'),
+        '-o',
+        resolve(root, 'service/dist/keychain-bridge'),
+      ],
+      { stdio: 'inherit' },
+    );
+    if (swift.status !== 0) throw new Error('钥匙串组件构建失败');
+  } else {
+    throw new Error('本机组件目前仅支持 macOS 和 Windows 构建');
+  }
 }

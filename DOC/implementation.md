@@ -1,5 +1,9 @@
 # 当前实施状态
 
+## 0.9.1 当前增量（2026-10-04）
+
+新增 extension/src/browser-service 负责浏览器配置、密钥、受限请求、计费任务及进度；shared/src/ai 复用原分析与问答规则，service 保留兼容出口与本机存储。设置页新增模式与密钥库，RPC 按模式分派。scripts/package-extension.mjs 生成独立 ZIP，不携带本机组件。详细边界见 [浏览器模式](browser-mode.md)。
+
 ## 0.6.2 交互修复（2026-10-02）
 
 extension/src/content/index.ts 的 frameHost 在插件宿主显式设置 pointer-events:auto，防止继承 B 站右栏的 none；覆盖 iframe 内容与收起横条，保留原有事件和布局。224 项单元测试及构建通过，真实网页隔离验证鼠标点击和内部滚动通过，用户随后确认基本功能与任务可完成；偶发首次整理失败仅记录，详见 test-feedback.md 的 OBS-20261002-01。

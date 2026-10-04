@@ -1,5 +1,16 @@
 # VideoNote 开发说明
 
+## 仅构建与分发扩展（0.9.1）
+
+普通用户使用成品 ZIP，不需要以下开发环境。开发者安装锁定依赖后执行：
+
+```sh
+pnpm run build:extension
+pnpm run package:extension
+```
+
+第二条会重新构建并生成 `artifacts/releases/VideoNote-0.9.1-chrome.zip`，包含扩展、安装说明及许可证；使用 Node 内置能力生成 ZIP，不依赖系统 zip、Swift 或 Windows 编译器。完整 `pnpm run build` 仍构建可选本机组件。发布 ZIP 前检查内容、验证加载并人工验收，再按明确授权上传。浏览器服务实现见 [browser-mode.md](browser-mode.md)。
+
 本文面向需要从源码构建或参与开发的人。普通使用方式见[README](../README.md)与[安装与使用指南](user-guide.md)。
 
 ## 环境与源码

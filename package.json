@@ -3,13 +3,15 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "version": "0.8.1",
+  "version": "0.9.1",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:extension": "node scripts/build.mjs --extension-only",
+    "package:extension": "pnpm run build:extension && node scripts/package-extension.mjs",
     "typecheck": "tsc -p extension/tsconfig.json && tsc -p service/tsconfig.json && tsc -p shared/tsconfig.json",
     "lint": "eslint extension/src service/src shared/src",
     "format:check": "prettier --check extension/src service/src shared/src scripts/build.mjs",

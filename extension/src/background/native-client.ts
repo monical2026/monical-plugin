@@ -1,4 +1,5 @@
-export async function native(
+import { backend } from '../browser-service/storage';
+export async function callNative(
   operation: string,
   payload: unknown,
 ): Promise<unknown> {
@@ -23,4 +24,14 @@ export async function native(
       });
     throw new Error(message, { cause: error });
   }
+}
+
+export async function native(
+  operation: string,
+  payload: unknown,
+): Promise<unknown> {
+  if (operation.startsWith('obsidian') || (await backend()) === 'native')
+    return callNative(operation, payload);
+  const { browserService } = await import('../browser-service/service');
+  return browserService(operation, payload);
 }

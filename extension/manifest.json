@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VideoNote",
-  "version": "0.8.1",
+  "version": "0.9.1",
   "description": "带时间的双语逐字稿、中文梳理和可编辑学习笔记。",
   "permissions": [
     "storage",
@@ -93,5 +93,9 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
+  "minimum_chrome_version": "114"
 }

@@ -159,6 +159,11 @@ export function videoActions({
   async function analyze() {
     if (!record) return;
     await run('正在整理视频脉络…', async (token) => {
+      const workflow = {
+        runId: crypto.randomUUID(),
+        videoId: record.videoId,
+        source: sourceVersion(record.segments),
+      };
       const batches = analysisBatches(record.segments);
       const parts: Analysis[] = [];
       for (const [index, segments] of batches.entries()) {
@@ -169,7 +174,11 @@ export function videoActions({
             await rpc({
               type: 'native',
               operation: 'generate',
-              payload: { task: 'analyze', segments: analysisInput(segments) },
+              payload: {
+                task: 'analyze',
+                segments: analysisInput(segments),
+                workflow,
+              },
             }),
           ),
         );
@@ -178,7 +187,7 @@ export function videoActions({
       }
       const draft = mergeAnalyses(parts);
       if (draft.formatVersion !== 3)
-        throw new Error('本机组件尚未更新，请更新后再整理；已有结果仍保留');
+        throw new Error('服务返回了旧版结构，请更新后再整理；已有结果仍保留');
       setBusy('正在复核全片主线、关键点、金句与方法…');
       const result = analysisSchema.parse(
         await rpc({
@@ -186,6 +195,7 @@ export function videoActions({
           operation: 'generate',
           payload: {
             task: 'reviewAnalysis',
+            workflow,
             analysis: draft,
             segments: analysisInput(record.segments),
           },

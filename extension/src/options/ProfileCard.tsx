@@ -134,7 +134,7 @@ export function ProfileCard({
             )}
           />
           <p className="field-help">
-            小叉仅清空本次输入；已保存的系统凭据密钥不会被删除。更换 API
+            小叉仅清空本次输入；已保存的密钥不会被删除。更换 API
             地址后须填写新地址对应的密钥。
           </p>
         </>
