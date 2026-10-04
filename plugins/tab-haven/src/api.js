@@ -1,3 +1,4 @@
+import { setMediaState } from './media.js';
 export const isExtension = Boolean(globalThis.chrome?.tabs?.query && globalThis.chrome?.runtime?.id);
 const sample = [
   ['douyin.com/video/101', '城市散步｜把日常过成电影', 1], ['douyin.com/video/102', '周末做一份好吃的早餐', 1], ['douyin.com/video/101', '城市散步｜把日常过成电影', 2], ['douyin.com/video/103', '值得收藏的旅行目的地', 1],
@@ -6,12 +7,13 @@ const sample = [
   ['bilibili.com/video/BV1', '一个安静的下午，和一本书', 2], ['bilibili.com/video/BV2', '从零开始理解设计', 2],
   ['figma.com/community', 'Figma Community', 1], ['notion.so/workspace', '我的灵感笔记', 2],
 ];
-let demoTabs = sample.map(([path, title, windowId], index) => ({ id: index + 1, url: `https://${path}`, title, windowId, active: index === 0, pinned: false }));
+let demoTabs = sample.map(([path, title, windowId], index) => ({ id: index + 1, url: `https://${path}`, title, windowId, active: index === 0, pinned: false, audible: index === 0 || index === 9, mutedInfo: { muted: false } }));
 const listeners = new Set();
 export const api = isExtension ? {
   list: () => chrome.tabs.query({ windowType: 'normal' }),
   remove: id => chrome.tabs.remove(id),
   create: url => chrome.tabs.create({ url, active: true }),
+  mute: (tab, muted) => setMediaState(chrome, tab, muted),
   pin: (id, pinned) => chrome.tabs.update(id, { pinned }),
   async reopen(tab) {
     const windows = await chrome.windows.getAll({ windowTypes: ['normal'] });
@@ -29,6 +31,11 @@ export const api = isExtension ? {
 } : {
   list: async () => [...demoTabs],
   async create(url) { demoTabs.push({ id: Math.max(0, ...demoTabs.map(tab => tab.id)) + 1, url, title: new URL(url).hostname, windowId: 1 }); listeners.forEach(fn => fn()); },
+  async mute(target, muted) {
+    const tab = demoTabs.find(tab => tab.id === target.id);
+    if (!tab) throw new Error('标签已关闭');
+    tab.mutedInfo = { muted }; tab.audible = !muted; listeners.forEach(fn => fn()); return {};
+  },
   async pin(id, pinned) {
     const tab = demoTabs.find(tab => tab.id === id);
     if (!tab) throw new Error('标签已关闭');
