@@ -1,4 +1,4 @@
-# 浏览器独立模式（0.9.1）
+# 浏览器独立模式（0.9.1 引入，当前 0.9.2）
 
 新安装默认浏览器模式；从 0.8.x 及更早版本升级、且没有模式选择时保留本机模式。用户可在设置中主动切换，两套服务配置与凭据独立，不自动复制系统密钥。现有学习记录的数据库、扩展身份与 Mac 本机注册标识保持不变。
 
@@ -26,6 +26,6 @@ shared/src/ai 是浏览器与本机共用的分析、校验、问答、翻译和
 
 ## 分发与验收
 
-`pnpm run package:extension` 输出 `artifacts/releases/VideoNote-0.9.1-chrome.zip`。ZIP 中的 VideoNote 文件夹可供 Chrome 加载，包含 manifest、构建资源、许可证与第三方许可；根部附安装说明。打包不需要本机组件工具链。当前仅本地生成，尚未发布 GitHub Release。
+`pnpm run package:extension` 输出 `artifacts/releases/VideoNote-0.9.2-chrome.zip`。ZIP 中的 VideoNote 文件夹可供 Chrome 加载，包含 manifest、构建资源、许可证与第三方许可；根部附安装说明。打包不需要本机组件工具链。0.9.2 已发布 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)，下载及更新步骤见[安装指南](user-guide.md)。
 
-单元测试及构建只能验证实现的一部分。真实 Chrome 权限提示、浏览器重启、平台字幕、实际供应商 API、Windows 环境和旧版升级仍需要人工验收，不能以测试夹具替代。
+用户已确认 0.9.2 可用并授权发布。自动检查和本次用户反馈不等于所有环境均已验证；真实 Chrome 权限、重启、各平台字幕、供应商 API 与旧版升级的完整兼容性仍需持续验证。

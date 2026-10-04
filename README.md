@@ -4,7 +4,7 @@
 
 [快速开始](#快速开始) · [功能介绍](#你可以用它做什么) · [常见问题](#常见问题) · [更新日志](DOC/changelog.md)
 
-当前版本 **0.9.2**，支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 适配已加入，尚待 Windows 实机验收；平台及限制见[支持范围](#支持范围)。
+当前版本 **0.9.2**，支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 可使用同一浏览器模式安装包；完整平台兼容性仍待验证，范围及限制见[支持范围](#支持范围)。
 
 ## 为什么做这个插件
 
@@ -44,11 +44,11 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 准备 Chrome 和一个支持的视频。第一次建议选择有字幕的视频，先体验阅读和记录，再按需配置 AI。
 
-使用成品包 `VideoNote-0.9.2-chrome.zip`，不需要安装 Node.js、pnpm 或本机组件。当前已生成本地交付包，尚未上传 GitHub Release。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
+下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/YouTube---/releases/download/v0.9.2/VideoNote-0.9.2-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包已正式发布，说明见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
 
 ### 安装
 
-1. 如果拿到的是成品 ZIP，先解压，并把文件夹放在准备长期保留的位置。
+1. 下载成品 ZIP 后先解压，并把文件夹放在准备长期保留的位置。
 2. 在 Chrome 地址栏输入 `chrome://extensions`，开启右上角“开发者模式”。
 3. 点击“加载已解压的扩展程序”（部分界面称“加载未打包的扩展程序”），选择包含 `manifest.json` 的成品文件夹。成品包解压后选择 `VideoNote` 文件夹（开发者构建对应 `extension/dist`）。
 4. 打开或刷新一个支持的视频页面，点击“VideoNote”入口。
@@ -85,7 +85,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 | --- | --- |
 | YouTube | 普通 watch 点播页；优先读取已有字幕，必要时可配置 Supadata；无字幕生成须逐次确认 |
 | B 站 | 普通 BV 视频及多 P 的已有字幕；部分字幕需要登录；无字幕转写尚未接入 |
-| 浏览器与系统 | Mac 方案保留；Windows 适配已加入、尚待实机验收；Linux 和其他浏览器未完成支持 |
+| 浏览器与系统 | Mac 方案保留；Windows + Chrome 使用同一成品包，完整兼容性仍待验证；Linux 和其他浏览器未完成支持 |
 | 本地翻译 | 使用 Chrome Translator API，受浏览器、设备与语言支持影响；首次使用可能需要下载模型 |
 | 暂不支持 | YouTube Shorts、直播、站外嵌入视频、小红书、抖音，以及画面识别/OCR |
 | 数据使用 | 当前电脑、本地浏览器配置文件保存；没有跨设备自动同步 |
@@ -128,7 +128,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 遇到问题或有建议，可以通过 [GitHub Issues](https://github.com/monical2026/YouTube---/issues) 反馈。请说明插件版本、浏览器与系统、视频平台、操作步骤和错误提示；不要提交 API Key 或私人笔记。
 
-后续方向包括公开分发成品包、通用无字幕转写，以及小红书和抖音单条视频适配。这些是计划方向，尚不代表已支持，也没有承诺完成日期。
+后续方向包括通用无字幕转写，以及小红书和抖音单条视频适配。这些是计划方向，尚不代表已支持，也没有承诺完成日期。
 
 ## 项目文档
 

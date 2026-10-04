@@ -82,4 +82,4 @@ macOS 启动脚本记录执行安装时的 Node 绝对路径。移动或删除�
 
 ## 成品分发状态
 
-当前没有公开 Release 成品包。后续若提供扩展 ZIP，应包含完整的 extension/dist 内容，让用户解压后选择含 manifest.json 的目录。扩展 ZIP 与本机组件安装是两项不同的交付；准备扩展压缩包不代表组件已可跨电脑安装。发布前还需验证安装流程，并取得发布授权。
+0.9.2 已正式发布到 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)，附件为 VideoNote-0.9.2-chrome.zip，源代码提交为 ccbbd36e193361c59a5ef8aee220b94e2c376615。普通用户的下载及安装入口统一见[安装指南](user-guide.md#安装扩展)。扩展 ZIP 与可选本机组件是两项不同的交付；此 Release 不包含本机组件安装器。后续发布仍需检查安装包、记录验证结果并取得发布授权。纯文档更新不升级插件版本、不重建已发布 ZIP，也不移动已发布标签。

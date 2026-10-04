@@ -1,12 +1,12 @@
 # VideoNote 安装与使用指南
 
-产品介绍和支持范围见[README](../README.md)。Mac 方案保留；Windows + Chrome 适配已加入，尚待实机验收，详见 [Windows 支持](windows-support.md)。
+产品介绍和支持范围见[README](../README.md)。Mac 方案保留；Windows + Chrome 可使用同一浏览器模式安装包，完整兼容性仍待验证，详见 [Windows 支持](windows-support.md)。
 
 ## 安装扩展
 
-使用 `VideoNote-0.9.2-chrome.zip` 成品包，无需安装开发工具或本机组件。当前已生成本地交付包，尚未上传 GitHub Release；GitHub 的 Code → Download ZIP 仍是源码。
+从 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2) 下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/YouTube---/releases/download/v0.9.2/VideoNote-0.9.2-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
 
-拿到成品后：
+下载后按以下步骤安装：
 
 1. ZIP 文件先解压，文件夹放到长期保留的位置，不要加载后删除或随意移动。
 2. 在 Chrome 地址栏输入 chrome://extensions，开启“开发者模式”。

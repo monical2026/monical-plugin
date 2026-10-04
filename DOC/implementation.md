@@ -1,6 +1,8 @@
 # 当前实施状态
 
-## 0.9.2 · 安装包问题修订（待验收）
+## 0.9.2 · 安装包问题修订（用户验收通过，已发布）
+
+0.9.2 已按用户授权提交并正式发布，见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)；源码提交 ccbbd36，附件 VideoNote-0.9.2-chrome.zip。以下旧版本内容为当时记录，当前交付以本节与[安装指南](user-guide.md)为准。
 
 background/native-client.ts 静态引用 browserService，build.mjs 检查后台所有输出 chunk 的 dynamicImports。ProfileCard 使用 providers 的官方密钥链接；设置页增加保存反馈和密钥库检查，保留原成功保存基准逻辑。
 

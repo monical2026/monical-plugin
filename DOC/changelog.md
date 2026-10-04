@@ -1,6 +1,8 @@
 # 版本更新记录
 
-## 0.9.2 · 安装包问题修订（用户验收通过，授权归档）
+## 0.9.2 · 安装包问题修订（用户验收通过，已发布）
+
+0.9.2 已按用户授权提交并正式发布，见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)；源码提交 ccbbd36，附件 VideoNote-0.9.2-chrome.zip。以下旧版本内容为当时记录，当前交付以本节与[安装指南](user-guide.md)为准。
 
 后台改为静态导入，避免 Service Worker 禁止 import() 的错误；构建拒绝后台动态导入。API Key 下增加官方获取入口；保存按钮附近显示成功或失败原因，未解锁时给出明确步骤并保留输入。
 
