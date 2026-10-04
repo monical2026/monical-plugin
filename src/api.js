@@ -12,6 +12,14 @@ export const api = isExtension ? {
   list: () => chrome.tabs.query({ windowType: 'normal' }),
   remove: id => chrome.tabs.remove(id),
   create: url => chrome.tabs.create({ url, active: true }),
+  pin: (id, pinned) => chrome.tabs.update(id, { pinned }),
+  async reopen(tab) {
+    const windows = await chrome.windows.getAll({ windowTypes: ['normal'] });
+    const target = windows.find(window => window.id === tab.windowId && !window.incognito);
+    const options = { url: tab.pendingUrl || tab.url, pinned: Boolean(tab.pinned), active: false };
+    if (target) { options.windowId = target.id; if (Number.isInteger(tab.index)) options.index = tab.index; }
+    return chrome.tabs.create(options);
+  },
   async activate(tab) { await chrome.tabs.update(tab.id, { active: true }); await chrome.windows.update(tab.windowId, { focused: true }); },
   subscribe(callback) {
     const events = [chrome.tabs.onCreated, chrome.tabs.onRemoved, chrome.tabs.onUpdated, chrome.tabs.onActivated, chrome.tabs.onAttached, chrome.tabs.onDetached, chrome.windows.onRemoved];
@@ -21,6 +29,12 @@ export const api = isExtension ? {
 } : {
   list: async () => [...demoTabs],
   async create(url) { demoTabs.push({ id: Math.max(0, ...demoTabs.map(tab => tab.id)) + 1, url, title: new URL(url).hostname, windowId: 1 }); listeners.forEach(fn => fn()); },
+  async pin(id, pinned) {
+    const tab = demoTabs.find(tab => tab.id === id);
+    if (!tab) throw new Error('标签已关闭');
+    tab.pinned = pinned; listeners.forEach(fn => fn());
+  },
+  async reopen(tab) { demoTabs.push({ ...tab, id: Math.max(0, ...demoTabs.map(tab => tab.id)) + 1, active: false }); listeners.forEach(fn => fn()); },
   async remove(id) { demoTabs = demoTabs.filter(tab => tab.id !== id); listeners.forEach(fn => fn()); },
   async activate() { /* 演示模式不操作真实标签。 */ },
   subscribe(callback) { listeners.add(callback); return () => listeners.delete(callback); },

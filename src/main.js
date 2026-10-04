@@ -1,11 +1,13 @@
 import './style.css';
 import './sidebar.js';
+import { createRecovery } from './recovery.js';
 import { preferences } from './preferences.js';
 import { version } from '../package.json';
 import { api, isExtension } from './api.js';
 import { address, eligible, groupsFor, duplicateSets, closeSnapshot } from './model.js';
 import { siteTone, retainOrder, faviconSource } from './presentation.js';
 const siteOrder = [];
+const recovery = createRecovery(api);
 const $ = selector => document.querySelector(selector);
 const ownOrigin = isExtension ? `chrome-extension://${chrome.runtime.id}` : '';
 let tabs = [], generation = 0, pending = null, busy = false, toastTimer, lastState = null;
@@ -74,7 +76,16 @@ function render(scrollToKey = null) {
         details.append(node('span', 'tab-info', `窗口 ${windowIds.indexOf(tab.windowId) + 1}${tab.pinned ? ' · 已固定' : ''}${tab.active ? ' · 活动页' : ''}${duplicateIds.has(tab.id) ? ' · 重复' : ''}`));
         jump.append(pageIcon(tab, 'tab-favicon', group.name.slice(0, 1)), details);
         const close = button('×', 'close-tab', `关闭标签 ${tab.title || address(tab)}`, async () => { close.disabled = true; await performClose([tab], false); });
-        item.append(jump, close); list.append(item);
+        const pin = button('', 'pin-tab', `${tab.pinned ? '取消固定' : '固定标签'} ${tab.title || address(tab)}`, async () => {
+          pin.disabled = true;
+          try { await api.pin(tab.id, !tab.pinned); }
+          catch { message('固定状态修改失败，标签可能已关闭，请重试'); }
+          finally { await refresh(); pin.disabled = false; }
+        });
+        pin.title = tab.pinned ? '取消固定' : '固定到浏览器标签栏';
+        pin.setAttribute('aria-pressed', Boolean(tab.pinned));
+        pin.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 1-3 5-4-4 5-3 1-4Z"/><path d="m10 10-3 3 4 4 3-3M9 15l-6 6"/></svg>';
+        item.append(jump, pin, close); list.append(item);
       }
       card.append(list);
     }
@@ -101,11 +112,56 @@ function showConfirm(snapshot, title, duplicates, matchedCount = null) {
 }
 async function performClose(snapshot, duplicates) {
   try {
-    const result = await closeSnapshot(api, snapshot, ownOrigin, duplicates);
-    message(`已关闭 ${result.closed} 个标签${result.skipped ? `，${result.skipped} 个已变化或无需关闭` : ''}${result.failed ? `，${result.failed} 个关闭失败，请重试` : ''}`);
+    const closedTabs = [];
+    const result = await closeSnapshot(api, snapshot, ownOrigin, duplicates, tab => closedTabs.push(tab));
+    recovery.add(closedTabs);
+    renderRecovery();
+    if (result.failed || result.skipped) message(`${result.failed ? `${result.failed} 个标签关闭失败，请重试。` : ''}${result.skipped ? `${result.skipped} 个标签已变化或无需关闭。` : ''}`);
   } catch { message('无法读取标签，未执行关闭，请刷新后重试'); }
   await refresh();
 }
+function setRecoveryOpen(open) {
+  $('#recovery-panel').hidden = !open;
+  $('#reopen-tabs').setAttribute('aria-expanded', open);
+}
+function renderRecovery() {
+  const trigger = $('#reopen-tabs');
+  const items = recovery.items;
+  const label = items.length ? `选择重新打开的标签（${items.length}）` : '暂无可重新打开的标签';
+  trigger.title = label;
+  trigger.setAttribute('aria-label', label);
+  trigger.disabled = !items.length;
+  $('#recovery-list').replaceChildren(...items.map(tab => {
+    const row = node('li', '');
+    const restore = button('', 'recovery-item', `重新打开 ${tab.title || address(tab)}`, async () => {
+      const operation = recovery.restore(tab.recoveryId);
+      renderRecovery();
+      const result = await operation;
+      renderRecovery();
+      if (result.failed) message('此页面重新打开失败，请重试');
+      await refresh();
+      if (!$('#recovery-panel').hidden) $('#recovery-list button')?.focus();
+      else trigger.focus();
+    });
+    restore.disabled = recovery.busy;
+    restore.title = `${tab.title || '未命名页面'}\n${address(tab)}`;
+    restore.append(node('span', 'recovery-title', tab.title || '未命名页面'), node('span', 'recovery-url', address(tab)));
+    row.append(restore); return row;
+  }));
+  if (!items.length) setRecoveryOpen(false);
+}
+$('#reopen-tabs').addEventListener('click', () => {
+  const open = $('#recovery-panel').hidden;
+  renderRecovery();
+  setRecoveryOpen(open && recovery.items.length > 0);
+  if (open) $('#recovery-list button')?.focus();
+});
+document.addEventListener('click', event => {
+  if (!event.composedPath().includes($('.topbar-actions'))) setRecoveryOpen(false);
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !$('#recovery-panel').hidden) { setRecoveryOpen(false); $('#reopen-tabs').focus(); }
+});
 async function refresh() {
   const request = ++generation;
   try { const loaded = await api.list(); if (request !== generation) return; const next = loaded.filter(tab => eligible(tab, ownOrigin)); const state = JSON.stringify(next); if (state !== lastState) { tabs = next; lastState = state; render(); } }
