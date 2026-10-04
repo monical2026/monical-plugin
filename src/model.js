@@ -25,7 +25,7 @@ export function duplicateSets(tabs) {
     return { key, keep: sorted[0], remove: sorted.slice(1) };
   });
 }
-export function groupsFor(tabs, query = '') {
+export function groupsFor(tabs, query = '', mode = 'all') {
   const groups = new Map();
   for (const tab of tabs) {
     const site = siteFor(address(tab));
@@ -33,7 +33,7 @@ export function groupsFor(tabs, query = '') {
     groups.get(site.key).tabs.push(tab);
   }
   const needle = query.trim().toLocaleLowerCase();
-  return [...groups.values()].map(group => ({ ...group, matched: group.tabs.filter(tab => `${group.name} ${tab.title || ''} ${address(tab)}`.toLocaleLowerCase().includes(needle)) })).filter(group => group.matched.length).sort((a, b) => b.tabs.length - a.tabs.length || a.name.localeCompare(b.name));
+  return [...groups.values()].map(group => ({ ...group, matched: group.tabs.filter(tab => (mode === 'all' || (mode === 'audible' ? tab.audible && !tab.mutedInfo?.muted : tab.pinned)) && `${group.name} ${tab.title || ''} ${address(tab)}`.toLocaleLowerCase().includes(needle)) })).filter(group => group.matched.length).sort((a, b) => b.tabs.length - a.tabs.length || a.name.localeCompare(b.name));
 }
 // 执行时重新核对地址，跳过已导航、已关闭或变成仪表盘的标签。
 export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = false, onClosed = () => {}, protectPinned = false) {
@@ -51,10 +51,10 @@ export async function closeSnapshot(api, snapshot, ownOrigin, duplicateOnly = fa
 }
 
 // 所有网站共用同一份搜索结果，避免全选和展示范围不一致。
-export function matchingTabs(tabs, query) {
-  return groupsFor(tabs, query).flatMap(group => group.matched);
+export function matchingTabs(tabs, query, mode = 'all') {
+  return groupsFor(tabs, query, mode).flatMap(group => group.matched);
 }
-export function selectCurrentResults(selection, tabs, query) {
+export function selectCurrentResults(selection, tabs, query, mode = 'all') {
   selection.clear();
-  for (const tab of matchingTabs(tabs, query)) selection.set(tab.id, address(tab));
+  for (const tab of matchingTabs(tabs, query, mode)) selection.set(tab.id, address(tab));
 }

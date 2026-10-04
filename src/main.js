@@ -14,7 +14,7 @@ const ownOrigin = isExtension ? `chrome-extension://${chrome.runtime.id}` : '';
 let tabs = [], generation = 0, pending = null, busy = false, toastTimer, lastState = null;
 const expanded = new Set();
 const selected = new Map();
-let selecting = false;
+let selecting = false, quickFilter = 'all';
 function node(tag, className, text) { const el = document.createElement(tag); el.className = className; if (text !== undefined) el.textContent = text; return el; }
 function message(text) { $('#toast').textContent = text; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 4500); }
 function button(text, className, label, callback) { const el = node('button', className, text); el.type = 'button'; el.setAttribute('aria-label', label); el.addEventListener('click', callback); return el; }
@@ -31,15 +31,20 @@ function pageIcon(tab, className, fallback) {
   return icon;
 }
 function render(scrollToKey = null) {
-  const currentMatches = matchingTabs(tabs, $('#filter').value);
+  const currentMatches = matchingTabs(tabs, $('#filter').value, quickFilter);
   for (const [id, url] of selected) if (!currentMatches.some(tab => tab.id === id && address(tab) === url)) selected.delete(id);
   updateSelection();
   const query = $('#filter').value;
   retainOrder(groupsFor(tabs), siteOrder);
   const grouped = preferences().grouped;
-  const filtered = groupsFor(tabs, query);
+  const filtered = groupsFor(tabs, query, quickFilter);
   const matchedIds = new Set(filtered.flatMap(group => group.matched.map(tab => tab.id)));
   const groups = grouped ? retainOrder(filtered, siteOrder) : (matchedIds.size ? [{ key: 'all', name: '全部页面', host: '', tabs, matched: tabs.filter(tab => matchedIds.has(tab.id)) }] : []);
+  document.querySelectorAll('[data-quick-filter]').forEach(button => {
+    button.setAttribute('aria-pressed', button.dataset.quickFilter === quickFilter);
+    const count = matchingTabs(tabs, query, button.dataset.quickFilter).length;
+    button.querySelector('span').textContent = count;
+  });
   const duplicates = duplicateSets(tabs), duplicateIds = new Set(duplicates.flatMap(set => set.remove.map(tab => tab.id)));
   $('#total').textContent = tabs.length;
   $('#summary').textContent = `${groupsFor(tabs).length} 个网站 · ${new Set(tabs.map(tab => tab.windowId)).size} 个窗口 · 为每一个标签找到位置`;
@@ -68,13 +73,13 @@ function render(scrollToKey = null) {
         render(group.key);
       }
     });
-    const isOpen = selecting || !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); if (!direct) toggle.setAttribute('aria-expanded', isOpen);
+    const isOpen = selecting || !grouped || expanded.has(group.key) || Boolean(query.trim()) || quickFilter !== 'all'; card.classList.toggle('is-expanded', isOpen); if (!direct) toggle.setAttribute('aria-expanded', isOpen);
     const icon = pageIcon(group.tabs[0], 'site-icon', group.name.slice(0, 1).toUpperCase());
     toggle.append(icon);
     const text = node('span', 'site-text'); text.append(node('strong', '', group.name), node('span', 'domain', group.host)); toggle.append(text, node('span', 'chevron', direct ? '↗' : isOpen ? '−' : '+'));
     if (direct) toggle.title = `切换到 ${group.tabs[0].title || address(group.tabs[0])}\n${address(group.tabs[0])}`;
     header.append(toggle); if (grouped) card.append(header);
-    const meta = node('div', 'card-meta'); meta.append(node('span', '', query.trim() ? `匹配 ${group.matched.length} 页 / 共 ${group.tabs.length} 页` : `${group.tabs.length} 个标签`));
+    const meta = node('div', 'card-meta'); meta.append(node('span', '', (query.trim() || quickFilter !== 'all') ? `匹配 ${group.matched.length} 页 / 共 ${group.tabs.length} 页` : `${group.tabs.length} 个标签`));
     if (direct) {
       const details = button(isOpen ? '−' : '⋯', 'group-details', `展开或收起 ${group.name} 的页面操作`, () => {
         if (expanded.has(group.key)) expanded.delete(group.key); else expanded.add(group.key);
@@ -84,7 +89,7 @@ function render(scrollToKey = null) {
       details.setAttribute('aria-expanded', isOpen); header.append(details);
     }
     if (grouped) {
-      const closeGroup = button('×', 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null));
+      const closeGroup = button('×', 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, (query.trim() || quickFilter !== 'all') ? group.matched.length : null));
       closeGroup.title = `关闭整组 · ${group.tabs.length} 页`;
       header.append(closeGroup);
     }
@@ -145,7 +150,7 @@ function render(scrollToKey = null) {
     fragment.append(card);
   }
   $('#groups').replaceChildren(fragment); $('#empty').hidden = groups.length > 0;
-  $('#empty-text').textContent = query.trim() ? '没有匹配的标签，试试其他标题或网址。' : '暂时没有需要整理的标签，去发现点新东西吧。';
+  $('#empty-text').textContent = (query.trim() || quickFilter !== 'all') ? '没有符合条件的标签，试试其他筛选或关键词。' : '暂时没有需要整理的标签，去发现点新东西吧。';
   if (scrollToKey) {
     const target = [...$('#groups').children].find(card => card.dataset.siteKey === scrollToKey);
     if (target) {
@@ -172,7 +177,7 @@ function renderConfirmation() {
   $('#pinned-option').hidden = !groupClose || !pinned;
   $('#pinned-option-text').textContent = `同时关闭已固定页面（${pinned} 个）`;
   $('#dialog-description').textContent = duplicates ? '优先保留已固定的标签，其次保留活动标签或最近使用的标签。以下为待关闭项。' :
-    `将关闭 ${targets.length} 页，涉及 ${new Set(targets.map(tab => tab.windowId)).size} 个窗口。${groupClose && !includePinned && pinned ? `保留 ${pinned} 个已固定页面。` : ''}${matchedCount !== null ? `当前搜索匹配 ${matchedCount} 页，整组操作也包含未匹配的未固定页面${includePinned ? '及已固定页面' : ''}。` : ''}未保存的页面内容可能丢失，请确认后继续。`;
+    `将关闭 ${targets.length} 页，涉及 ${new Set(targets.map(tab => tab.windowId)).size} 个窗口。${groupClose && !includePinned && pinned ? `保留 ${pinned} 个已固定页面。` : ''}${matchedCount !== null ? `当前筛选匹配 ${matchedCount} 页，整组操作也包含未匹配的未固定页面${includePinned ? '及已固定页面' : ''}。` : ''}未保存的页面内容可能丢失，请确认后继续。`;
   $('#dialog-details').replaceChildren(...snapshot.map(tab => {
     const keeping = groupClose && !includePinned && tab.pinned;
     const entry = node('div', `confirm-item${keeping ? ' is-kept' : ''}`);
@@ -281,7 +286,7 @@ function updateSelection() {
   $('#selection-toolbar').hidden = !selecting;
   $('#toggle-selection').textContent = selecting ? '退出多选' : '多选';
   $('#toggle-selection').setAttribute('aria-pressed', selecting);
-  const matches = matchingTabs(tabs, $('#filter').value);
+  const matches = matchingTabs(tabs, $('#filter').value, quickFilter);
   const visibleSelected = matches.filter(tab => selected.has(tab.id)).length;
   $('#selection-count').textContent = `当前结果已选 ${selected.size} 页`;
   $('#select-results').textContent = `全选当前结果（${matches.length} 页）`;
@@ -291,7 +296,7 @@ function updateSelection() {
 $('#toggle-selection').addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
 $('#select-results').addEventListener('click', () => {
   if (!selecting) return;
-  selectCurrentResults(selected, tabs, $('#filter').value);
+  selectCurrentResults(selected, tabs, $('#filter').value, quickFilter);
   render();
 });
 $('#clear-selection').addEventListener('click', () => { selected.clear(); render(); });
@@ -300,6 +305,10 @@ $('#close-selected').addEventListener('click', () => {
   if (snapshot.length) showConfirm(snapshot, `关闭所选的 ${snapshot.length} 个标签？`, false, null, true);
 });
 $('#review-duplicates').addEventListener('click', () => { const snapshot = duplicateSets(tabs).flatMap(set => set.remove); if (snapshot.length) showConfirm(snapshot, `清理 ${snapshot.length} 个重复标签？`, true); });
+document.querySelectorAll('[data-quick-filter]').forEach(button => button.addEventListener('click', () => {
+  if (quickFilter === button.dataset.quickFilter) return;
+  quickFilter = button.dataset.quickFilter; selected.clear(); render();
+}));
 let selectionQuery = $('#filter').value;
 function filterChanged() {
   const query = $('#filter').value;
