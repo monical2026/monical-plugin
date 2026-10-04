@@ -1,3 +1,4 @@
+import { normalizeReviewPrerequisites } from './review-prerequisites';
 import { parseReviewPlan } from './analysis-diagnostics';
 import { assertTopicCoverage } from './analysis-coverage';
 import { z } from 'zod';
@@ -56,7 +57,7 @@ summary 必须重新写出简短全片总结（最多 200 字符）。复核计�
 topics：每项只写 startId/endId；需要改的字段才附上。合并或拆分造成范围变化时必须同时写新 title、introduction、keyPoints、clipVerdict、clipReason，并按需更新 problem/application。startId/endId 必须从 allowedBoundaryIds 列表中选择，不能取未列出的中间编号。合并应使用所合并章节的真实首末编号，不猜未知位置。
 knowledge：保留条目写 {indexes:[序号]}；语义同义合并时 indexes 列全部原序号，必须写整合后的 understanding/role，标题按需改；来源自动合并，顺序首项为主要讲解来源。不要丢不同条件。优先保留能串起全片主要问题与解法的关键点；同一核心概念的下位细节并入核心含义，不把所有推导小点都升格成全片关键点。
 methods：保留写 {indexes:[序号]}；合并时必须写整合后的 applicability/steps/limitations，保留必要条件，来源自动合并。去掉没有具体用法或只是重复要点的项目。
-prerequisites：只列保留条目的序号，去除非必要门槛及重复基础。
+prerequisites：必须是数字数组，例如 [0,2]，数字来自输入 prerequisites 的 index；没有保留项为 []。不要返回 {index:0}、{title:...} 或完整前置知识对象。只筛选原条目，正文由程序保留，去除非必要门槛及重复基础。
 quotes：只列合格候选的 {index:序号}；如候选开头指代不明，可截取同一原话内独立成立的连续子串，同时写 excerpt 和忠实 chinese。只选一句或两句，宁缺毋滥。“In both cases...”“depending on what you're trying to answer about it...”在没有具体对象时不能独立表达，应删除或取其中完整独立的原句。不要只因句子完整就认作金句。
 `;
 export function reviewPlanInstructions(scope: 'full' | 'chapters' | 'details') {
@@ -67,7 +68,7 @@ export function reviewPlanInstructions(scope: 'full' | 'chapters' | 'details') {
   const details = {
     knowledge: [{ indexes: [0] }],
     methods: [{ indexes: [0] }],
-    prerequisites: [],
+    prerequisites: [0],
     quotes: [{ index: 0 }],
   };
   const example =
@@ -87,7 +88,11 @@ function select<T>(items: T[], indexes: number[], seen: Set<number>) {
   });
 }
 export function applyReviewPlan(input: unknown, data: Material) {
-  const plan = parseReviewPlan(planSchema, input, '全片复核计划');
+  const plan = parseReviewPlan(
+    planSchema,
+    normalizeReviewPrerequisites(input, data.prerequisites),
+    '全片复核计划',
+  );
   assertTopicCoverage(plan.topics, data.segmentCount);
   const seenKnowledge = new Set<number>(),
     seenMethods = new Set<number>();

@@ -1,3 +1,4 @@
+import { normalizeReviewPrerequisites } from './review-prerequisites';
 import { parseReviewPlan } from './analysis-diagnostics';
 import {
   coverageInstruction,
@@ -73,21 +74,24 @@ export async function requestReviewPlan(
   });
   const details = parseReviewPlan(
     detailPlan,
-    await request(
-      {
-        ...material,
-        summary: chapters.summary,
-        topics: material.topics.map((t) => ({
-          title: t.title,
-          introduction: t.introduction,
-          keyPoints: t.keyPoints,
-        })),
-        allowedBoundaryIds: [],
-        boundaryEvidence: [],
-      },
-      generate,
-      '本轮只复核关键点、方法、前置知识、金句。章节仅供理解主线，不得输出或修改章节。只输出 {"knowledge":[分组修订计划],"methods":[分组修订计划],"prerequisites":[保留序号],"quotes":[保留或截取计划]} 四个字段。序号仍对应本轮材料各自原数组。',
-      'details',
+    normalizeReviewPrerequisites(
+      await request(
+        {
+          ...material,
+          summary: chapters.summary,
+          topics: material.topics.map((t) => ({
+            title: t.title,
+            introduction: t.introduction,
+            keyPoints: t.keyPoints,
+          })),
+          allowedBoundaryIds: [],
+          boundaryEvidence: [],
+        },
+        generate,
+        '本轮只复核关键点、方法、前置知识、金句。章节仅供理解主线，不得输出或修改章节。只输出 {"knowledge":[分组修订计划],"methods":[分组修订计划],"prerequisites":[保留序号],"quotes":[保留或截取计划]} 四个字段。序号仍对应本轮材料各自原数组。',
+        'details',
+      ),
+      material.prerequisites,
     ),
     '全片提炼条目复核计划',
   );

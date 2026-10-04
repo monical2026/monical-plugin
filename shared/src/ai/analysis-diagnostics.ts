@@ -28,10 +28,21 @@ const fields = new Set([
   'index',
   'excerpt',
   'chinese',
+  'description',
+  'origin',
 ]);
-function valueType(value: unknown): string {
+function valueType(value: unknown, nested = false): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
+  if (typeof value === 'object' && !nested) {
+    const entries = Object.entries(value);
+    const known = entries
+      .filter(([key]) => fields.has(key))
+      .slice(0, 8)
+      .map(([key, child]) => `${key}:${valueType(child, true)}`);
+    const unknownCount = entries.filter(([key]) => !fields.has(key)).length;
+    return `object{${known.join(',')}${unknownCount ? `; unknownFields=${unknownCount}` : ''}}`;
+  }
   return typeof value;
 }
 export class AnalysisPlanFormatError extends Error {

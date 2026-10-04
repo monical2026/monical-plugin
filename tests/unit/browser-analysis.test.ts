@@ -10,7 +10,13 @@ beforeEach(() => {
   fixture = fakeChrome();
 });
 afterEach(() => vi.unstubAllGlobals());
-it.each(['valid', 'coverage', 'invalid-plan'])(
+it.each([
+  'valid',
+  'coverage',
+  'invalid-plan',
+  'prerequisite-reference',
+  'prerequisite-copy',
+])(
   '实际视频操作经浏览器 RPC 完成分析与全片复核，范围校正=%s，完全不调用本机',
   async (scenario) => {
     await unlockVault('fixture-password-123');
@@ -61,6 +67,19 @@ it.each(['valid', 'coverage', 'invalid-plan'])(
         quotes: [],
       },
     ];
+    const prerequisite = {
+      title: '基础',
+      description: '原材料说明',
+      origin: '讲者明确',
+    };
+    if (scenario.startsWith('prerequisite-')) {
+      Object.assign(responses[0], { prerequisites: [prerequisite] });
+      Object.assign(responses[1], {
+        prerequisites: [
+          scenario === 'prerequisite-reference' ? { index: 0 } : prerequisite,
+        ],
+      });
+    }
     if (scenario === 'coverage') {
       const invalid = structuredClone(responses[0]);
       invalid.topics[0].startId = '2';
@@ -140,6 +159,8 @@ it.each(['valid', 'coverage', 'invalid-plan'])(
     }
     expect(error.mock.calls.filter(([value]) => value)).toEqual([]);
     expect(record.analysis?.summary).toBe('全片总结');
+    if (scenario.startsWith('prerequisite-'))
+      expect(record.analysis?.prerequisites?.[0]).toMatchObject(prerequisite);
     expect(record.analysis?.topics[0].startSegmentId).toBe('s1');
     expect(fetch).toHaveBeenCalledTimes(scenario === 'coverage' ? 3 : 2);
     expect(fixture.chrome.runtime.sendMessage).not.toHaveBeenCalled();
