@@ -40,3 +40,10 @@ test('搜索匹配只影响展示，整组关闭范围仍完整', () => {
  const result=groupsFor([tab(1,'https://zhihu.com/a',{title:'学习'}),tab(2,'https://zhihu.com/b',{title:'旅行'})],'学习');
  assert.equal(result[0].matched.length,1); assert.equal(result[0].tabs.length,2);
 });
+test('整组保护跳过确认期间新固定页面，明确包含固定时允许关闭', async () => {
+ const original=tab(1,'https://x.com/');const current={...original,pinned:true};const removed=[];
+ const api={list:async()=>[current],remove:async id=>removed.push(id)};
+ assert.deepEqual(await closeSnapshot(api,[original],'',false,()=>{},true),{closed:0,skipped:1,failed:0});
+ assert.deepEqual(removed,[]);
+ await closeSnapshot(api,[current],'',false,()=>{},false);assert.deepEqual(removed,[1]);
+});

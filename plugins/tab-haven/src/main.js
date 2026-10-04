@@ -155,17 +155,39 @@ function render(scrollToKey = null) {
 
 }
 function showConfirm(snapshot, title, duplicates, matchedCount = null, multi = false) {
-  pending = { snapshot: snapshot.map(tab => ({ ...tab })), duplicates };
-  $('#dialog-title').textContent = title;
-  $('#dialog-description').textContent = duplicates ? '优先保留已固定的标签，其次保留活动标签或最近使用的标签。以下为待关闭项。' : `将关闭${multi ? '所选' : '该网站全部'} ${snapshot.length} 页${matchedCount !== null ? `，包括搜索未匹配的 ${snapshot.length - matchedCount} 页（匹配 ${matchedCount} 页）` : ""}，涉及 ${new Set(snapshot.map(tab => tab.windowId)).size} 个窗口。未保存的页面内容可能丢失，请确认后继续。`;
-  $('#dialog-details').replaceChildren(...snapshot.map(tab => { const entry = node('div', 'confirm-item'); entry.append(node('div', '', `${tab.title || '未命名页面'}${tab.pinned ? ' · 已固定' : ''}`), node('div', 'confirm-url', address(tab))); return entry; }));
-  $('#confirm-action').textContent = `确认关闭 ${snapshot.length} 个标签`;
+  pending = { snapshot: snapshot.map(tab => ({ ...tab })), duplicates, multi, title, matchedCount, includePinned: false };
+  $('#include-pinned').checked = false;
+  renderConfirmation();
   $('#confirm-dialog').showModal();
 }
-async function performClose(snapshot, duplicates) {
+function renderConfirmation() {
+  if (!pending) return;
+  const { snapshot, duplicates, multi, title, matchedCount, includePinned } = pending;
+  const groupClose = !duplicates && !multi;
+  const pinned = snapshot.filter(tab => tab.pinned).length;
+  const targets = groupClose && !includePinned ? snapshot.filter(tab => !tab.pinned) : snapshot;
+  pending.targets = targets;
+  $('#dialog-title').textContent = groupClose ? title.replace(/的 \d+ 个标签/, '的标签') : title;
+  $('#pinned-option').hidden = !groupClose || !pinned;
+  $('#pinned-option-text').textContent = `同时关闭已固定页面（${pinned} 个）`;
+  $('#dialog-description').textContent = duplicates ? '优先保留已固定的标签，其次保留活动标签或最近使用的标签。以下为待关闭项。' :
+    `将关闭 ${targets.length} 页，涉及 ${new Set(targets.map(tab => tab.windowId)).size} 个窗口。${groupClose && !includePinned && pinned ? `保留 ${pinned} 个已固定页面。` : ''}${matchedCount !== null ? `当前搜索匹配 ${matchedCount} 页，整组操作也包含未匹配的未固定页面${includePinned ? '及已固定页面' : ''}。` : ''}未保存的页面内容可能丢失，请确认后继续。`;
+  $('#dialog-details').replaceChildren(...snapshot.map(tab => {
+    const keeping = groupClose && !includePinned && tab.pinned;
+    const entry = node('div', `confirm-item${keeping ? ' is-kept' : ''}`);
+    entry.append(node('div', '', `${keeping ? '保留 · ' : ''}${tab.title || '未命名页面'}${tab.pinned ? ' · 已固定' : ''}`), node('div', 'confirm-url', address(tab)));
+    return entry;
+  }));
+  $('#confirm-action').textContent = targets.length ? `确认关闭 ${targets.length} 个标签` : '没有需要关闭的标签';
+  $('#confirm-action').disabled = !targets.length;
+}
+$('#include-pinned').addEventListener('change', () => {
+  if (pending) { pending.includePinned = $('#include-pinned').checked; renderConfirmation(); }
+});
+async function performClose(snapshot, duplicates, protectPinned = false) {
   try {
     const closedTabs = [];
-    const result = await closeSnapshot(api, snapshot, ownOrigin, duplicates, tab => closedTabs.push(tab));
+    const result = await closeSnapshot(api, snapshot, ownOrigin, duplicates, tab => closedTabs.push(tab), protectPinned);
     recovery.add(closedTabs);
     renderRecovery();
     if (result.failed || result.skipped) message(`${result.failed ? `${result.failed} 个标签关闭失败，请重试。` : ''}${result.skipped ? `${result.skipped} 个标签已变化或无需关闭。` : ''}`);
@@ -248,10 +270,10 @@ async function refresh() {
   }
 }
 $('#confirm-action').addEventListener('click', async () => {
-  if (busy || !pending) return;
+  if (busy || !pending || !pending.targets.length) return;
   busy = true; $('#confirm-action').disabled = true;
   const action = pending; $('#confirm-dialog').close();
-  try { await performClose(action.snapshot, action.duplicates); } finally { busy = false; $('#confirm-action').disabled = false; pending = null; }
+  try { await performClose(action.targets, action.duplicates, !action.duplicates && !action.multi && !action.includePinned); } finally { busy = false; $('#confirm-action').disabled = false; pending = null; }
 });
 $('#confirm-dialog').addEventListener('close', () => { if (!busy) pending = null; });
 function updateSelection() {

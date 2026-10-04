@@ -33,7 +33,7 @@
 <label>网站地址<input name="url" required placeholder="https://www.bilibili.com" autocomplete="off"></label>
 <p id="shortcut-error" role="alert"></p><div class="dialog-actions"><button id="cancel-shortcut" type="button" class="secondary">取消</button><button type="submit" class="primary">添加</button></div>
 </form></dialog>
-<dialog id="confirm-dialog" aria-labelledby="dialog-title"><form method="dialog"><div class="dialog-symbol">↗</div><h2 id="dialog-title"></h2><p id="dialog-description"></p><div id="dialog-details"></div><div class="dialog-actions"><button value="cancel" class="secondary">先保留</button><button id="confirm-action" type="button" class="danger">确认关闭</button></div></form></dialog>
+<dialog id="confirm-dialog" aria-labelledby="dialog-title"><form method="dialog"><div class="dialog-symbol">↗</div><h2 id="dialog-title"></h2><p id="dialog-description"></p><label id="pinned-option" hidden><input id="include-pinned" type="checkbox"><span id="pinned-option-text"></span></label><div id="dialog-details"></div><div class="dialog-actions"><button value="cancel" class="secondary">先保留</button><button id="confirm-action" type="button" class="danger">确认关闭</button></div></form></dialog>
 
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module" src="/src/main.js"></script>
