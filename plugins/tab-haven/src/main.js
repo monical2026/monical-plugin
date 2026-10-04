@@ -1,5 +1,6 @@
 import './style.css';
 import './sidebar.js';
+import { audioState, audioSummary } from './audio.js';
 import { createRecovery } from './recovery.js';
 import { preferences } from './preferences.js';
 import { version } from '../package.json';
@@ -71,6 +72,8 @@ function render(scrollToKey = null) {
       closeGroup.title = `关闭整组 · ${group.tabs.length} 页`;
       header.append(closeGroup);
     }
+    const soundSummary = audioSummary(group.tabs);
+    if (soundSummary) meta.append(node('span', 'audio-summary', soundSummary));
     card.append(meta);
     if (isOpen) {
       const list = node('ul', 'tab-list');
@@ -103,7 +106,23 @@ function render(scrollToKey = null) {
         pin.title = tab.pinned ? '取消固定' : '固定到浏览器标签栏';
         pin.setAttribute('aria-pressed', Boolean(tab.pinned));
         pin.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 1-3 5-4-4 5-3 1-4Z"/><path d="m10 10-3 3 4 4 3-3M9 15l-6 6"/></svg>';
-        item.append(jump, pin, close); list.append(item);
+        item.append(jump);
+        const sound = audioState(tab);
+        if (sound !== 'silent') {
+          const muted = sound === 'muted';
+          const mute = button('', `mute-tab ${sound}`, `${muted ? '恢复声音并继续播放' : '静音并暂停'} ${tab.title || address(tab)}`, async () => {
+            mute.disabled = true;
+            try { const result = await api.mute(tab, !muted); if (result.warning) message(result.warning); }
+            catch { message('声音设置失败，标签可能已关闭，请重试'); }
+            finally { await refresh(); mute.disabled = false; }
+          });
+          mute.title = muted ? '已静音 · 点击恢复声音并继续播放' : '正在出声 · 点击静音并暂停';
+          mute.setAttribute('aria-pressed', muted);
+          mute.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/>${muted ? '<path d="m16 9 5 6m0-6-5 6"/>' : '<path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>'}</svg>`;
+          details.append(node('span', 'audio-status', muted ? '已静音' : '正在出声'));
+          item.append(mute);
+        }
+        item.append(pin, close); list.append(item);
       }
       card.append(list);
     }
