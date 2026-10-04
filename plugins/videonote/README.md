@@ -6,7 +6,7 @@
 
 [快速开始](#快速开始) · [功能介绍](#你可以用它做什么) · [常见问题](#常见问题) · [更新日志](DOC/changelog.md)
 
-当前开发版本 **0.9.4**（待验收；下方正式下载仍为 0.9.2），支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 可使用同一浏览器模式安装包；完整平台兼容性仍待验证，范围及限制见[支持范围](#支持范围)。
+当前交付版本 **0.9.4**（Windows 实机与真实模型复测仍待完成），支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 可使用同一浏览器模式安装包；完整平台兼容性仍待验证，范围及限制见[支持范围](#支持范围)。
 
 ## 为什么做这个插件
 
@@ -46,7 +46,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 准备 Chrome 和一个支持的视频。第一次建议选择有字幕的视频，先体验阅读和记录，再按需配置 AI。
 
-下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.2-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包已正式发布，说明见 [GitHub Release](https://github.com/monical2026/VideoNote/releases/tag/v0.9.2)。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
+下载 [VideoNote-0.9.4-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.4-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包由本合集直接提供；历史 0.9.2 Release 保留供查阅。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
 
 ### 安装
 

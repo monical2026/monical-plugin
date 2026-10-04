@@ -4,7 +4,7 @@
 
 ## 安装扩展
 
-从插件合集下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.2-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
+从插件合集下载 [VideoNote-0.9.4-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.4-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
 
 下载后按以下步骤安装：
 
@@ -12,7 +12,7 @@
 2. 在 Chrome 地址栏输入 chrome://extensions，开启“开发者模式”。
 3. 点击“加载已解压的扩展程序”（部分界面称“加载未打包的扩展程序”）。
 4. 选择直接包含 manifest.json 的成品文件夹；成品解压后为 VideoNote 文件夹，不是 ZIP 本身或项目根目录。
-5. 打开或刷新普通 YouTube 点播页或 B 站普通 BV 视频页，点击 VideoNote 入口。
+5. 首次加载会自动打开设置页，填写服务配置并保存；之后打开或刷新普通 YouTube 点播页或 B 站普通 BV 视频页，点击 VideoNote 入口。
 
 只需本地加载，不需要点击 Chrome 的“打包扩展程序”。更新成品后，在扩展管理页重新加载，再刷新视频页。
 
