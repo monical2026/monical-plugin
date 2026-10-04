@@ -47,3 +47,14 @@ test('整组保护跳过确认期间新固定页面，明确包含固定时允�
  assert.deepEqual(removed,[]);
  await closeSnapshot(api,[current],'',false,()=>{},false);assert.deepEqual(removed,[1]);
 });
+test('全选关键词结果跨越所有网站，仅选择匹配项并替换旧选择', async () => {
+ const { matchingTabs, selectCurrentResults } = await import('../src/model.js');
+ const items=['feishu.cn','douyin.com','youtube.com','bilibili.com'].map((host,i)=>tab(i+1,`https://${host}/a`,{title:'硬件学习'}));
+ items.push(tab(5,'https://feishu.cn/b',{title:'旅行'}));
+ const selected=new Map([[5,'https://feishu.cn/b']]);
+ selectCurrentResults(selected,items,'硬件');
+ assert.deepEqual([...selected.keys()].sort(),[1,2,3,4]);
+ assert.equal(matchingTabs(items,'硬件').length,4);
+ selectCurrentResults(selected,items,'旅行');assert.deepEqual([...selected.keys()],[5]);
+ selectCurrentResults(selected,items,'不存在');assert.equal(selected.size,0);
+});

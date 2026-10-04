@@ -5,7 +5,7 @@ import { createRecovery } from './recovery.js';
 import { preferences } from './preferences.js';
 import { version } from '../package.json';
 import { api, isExtension } from './api.js';
-import { address, eligible, groupsFor, duplicateSets, closeSnapshot } from './model.js';
+import { address, eligible, groupsFor, duplicateSets, closeSnapshot, matchingTabs, selectCurrentResults } from './model.js';
 import { siteTone, retainOrder, faviconSource } from './presentation.js';
 const siteOrder = [];
 const recovery = createRecovery(api);
@@ -31,7 +31,8 @@ function pageIcon(tab, className, fallback) {
   return icon;
 }
 function render(scrollToKey = null) {
-  for (const [id, url] of selected) if (!tabs.some(tab => tab.id === id && address(tab) === url)) selected.delete(id);
+  const currentMatches = matchingTabs(tabs, $('#filter').value);
+  for (const [id, url] of selected) if (!currentMatches.some(tab => tab.id === id && address(tab) === url)) selected.delete(id);
   updateSelection();
   const query = $('#filter').value;
   retainOrder(groupsFor(tabs), siteOrder);
@@ -280,17 +281,33 @@ function updateSelection() {
   $('#selection-toolbar').hidden = !selecting;
   $('#toggle-selection').textContent = selecting ? '退出多选' : '多选';
   $('#toggle-selection').setAttribute('aria-pressed', selecting);
-  $('#selection-count').textContent = `已选 ${selected.size} 页（含搜索隐藏项）`;
+  const matches = matchingTabs(tabs, $('#filter').value);
+  const visibleSelected = matches.filter(tab => selected.has(tab.id)).length;
+  $('#selection-count').textContent = `当前结果已选 ${selected.size} 页`;
+  $('#select-results').textContent = `全选当前结果（${matches.length} 页）`;
+  $('#select-results').disabled = !matches.length || visibleSelected === matches.length;
   $('#close-selected').disabled = !selected.size;
 }
 $('#toggle-selection').addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
+$('#select-results').addEventListener('click', () => {
+  if (!selecting) return;
+  selectCurrentResults(selected, tabs, $('#filter').value);
+  render();
+});
 $('#clear-selection').addEventListener('click', () => { selected.clear(); render(); });
 $('#close-selected').addEventListener('click', () => {
   const snapshot = tabs.filter(tab => selected.get(tab.id) === address(tab));
   if (snapshot.length) showConfirm(snapshot, `关闭所选的 ${snapshot.length} 个标签？`, false, null, true);
 });
 $('#review-duplicates').addEventListener('click', () => { const snapshot = duplicateSets(tabs).flatMap(set => set.remove); if (snapshot.length) showConfirm(snapshot, `清理 ${snapshot.length} 个重复标签？`, true); });
-$('#filter').addEventListener('input', () => render());
+let selectionQuery = $('#filter').value;
+function filterChanged() {
+  const query = $('#filter').value;
+  if (query !== selectionQuery) { selected.clear(); selectionQuery = query; }
+  render();
+}
+$('#filter').addEventListener('input', filterChanged);
+$('#filter').addEventListener('search', filterChanged);
 $('#retry-tabs').addEventListener('click', refresh);
 $('#search').addEventListener('submit', event => { const input = $('#web-query'); if (!input.value.trim()) { event.preventDefault(); input.focus(); } else input.value = input.value.trim(); });
 $('#demo-note').hidden = isExtension;
