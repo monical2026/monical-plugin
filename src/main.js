@@ -12,6 +12,8 @@ const $ = selector => document.querySelector(selector);
 const ownOrigin = isExtension ? `chrome-extension://${chrome.runtime.id}` : '';
 let tabs = [], generation = 0, pending = null, busy = false, toastTimer, lastState = null;
 const expanded = new Set();
+const selected = new Map();
+let selecting = false;
 function node(tag, className, text) { const el = document.createElement(tag); el.className = className; if (text !== undefined) el.textContent = text; return el; }
 function message(text) { $('#toast').textContent = text; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 4500); }
 function button(text, className, label, callback) { const el = node('button', className, text); el.type = 'button'; el.setAttribute('aria-label', label); el.addEventListener('click', callback); return el; }
@@ -28,6 +30,8 @@ function pageIcon(tab, className, fallback) {
   return icon;
 }
 function render(scrollToKey = null) {
+  for (const [id, url] of selected) if (!tabs.some(tab => tab.id === id && address(tab) === url)) selected.delete(id);
+  updateSelection();
   const query = $('#filter').value;
   retainOrder(groupsFor(tabs), siteOrder);
   const grouped = preferences().grouped;
@@ -56,18 +60,32 @@ function render(scrollToKey = null) {
         render(group.key);
       }
     });
-    const isOpen = !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); toggle.setAttribute('aria-expanded', isOpen);
+    const isOpen = selecting || !grouped || expanded.has(group.key) || Boolean(query.trim()); card.classList.toggle('is-expanded', isOpen); toggle.setAttribute('aria-expanded', isOpen);
     const icon = pageIcon(group.tabs[0], 'site-icon', group.name.slice(0, 1).toUpperCase());
     toggle.append(icon);
     const text = node('span', 'site-text'); text.append(node('strong', '', group.name), node('span', 'domain', group.host)); toggle.append(text, node('span', 'chevron', isOpen ? '−' : '+'));
     header.append(toggle); if (grouped) card.append(header);
     const meta = node('div', 'card-meta'); meta.append(node('span', '', query.trim() ? `匹配 ${group.matched.length} 页 / 共 ${group.tabs.length} 页` : `${group.tabs.length} 个标签`));
-    if (grouped) meta.append(button(`关闭全部 ${group.tabs.length} 页`, 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null)));
+    if (grouped) {
+      const closeGroup = button('×', 'close-group', `关闭 ${group.name} 的 ${group.tabs.length} 个标签`, () => showConfirm(group.tabs, `关闭 ${group.name} 的 ${group.tabs.length} 个标签？`, false, query.trim() ? group.matched.length : null));
+      closeGroup.title = `关闭整组 · ${group.tabs.length} 页`;
+      header.append(closeGroup);
+    }
     card.append(meta);
     if (isOpen) {
       const list = node('ul', 'tab-list');
       for (const tab of group.matched) {
         const item = node('li', 'tab-row');
+        if (selecting) {
+          const checkbox = node('input', 'select-tab'); checkbox.type = 'checkbox';
+          checkbox.checked = selected.has(tab.id);
+          checkbox.setAttribute('aria-label', `选择 ${tab.title || address(tab)}`);
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) selected.set(tab.id, address(tab)); else selected.delete(tab.id);
+            updateSelection();
+          });
+          item.append(checkbox);
+        }
         const jump = button('', 'tab-link', `切换到 ${tab.title || address(tab)}`, async () => { try { await api.activate(tab); if (!isExtension) message('演示模式：安装插件后将切换到真实标签'); } catch { message('标签可能已关闭，请刷新后重试'); await refresh(); } });
         jump.title = `${tab.title || '未命名页面'}\n${address(tab)}`;
         const details = node('span', 'tab-details');
@@ -102,11 +120,11 @@ function render(scrollToKey = null) {
   }
 
 }
-function showConfirm(snapshot, title, duplicates, matchedCount = null) {
+function showConfirm(snapshot, title, duplicates, matchedCount = null, multi = false) {
   pending = { snapshot: snapshot.map(tab => ({ ...tab })), duplicates };
   $('#dialog-title').textContent = title;
-  $('#dialog-description').textContent = duplicates ? '优先保留已固定的标签，其次保留活动标签或最近使用的标签。以下为待关闭项。' : `将关闭该网站全部 ${snapshot.length} 页${matchedCount !== null ? `，包括搜索未匹配的 ${snapshot.length - matchedCount} 页（匹配 ${matchedCount} 页）` : ""}，涉及 ${new Set(snapshot.map(tab => tab.windowId)).size} 个窗口。未保存的页面内容可能丢失，请确认后继续。`;
-  $('#dialog-details').replaceChildren(...snapshot.map(tab => node('div', 'confirm-item', tab.title || address(tab))));
+  $('#dialog-description').textContent = duplicates ? '优先保留已固定的标签，其次保留活动标签或最近使用的标签。以下为待关闭项。' : `将关闭${multi ? '所选' : '该网站全部'} ${snapshot.length} 页${matchedCount !== null ? `，包括搜索未匹配的 ${snapshot.length - matchedCount} 页（匹配 ${matchedCount} 页）` : ""}，涉及 ${new Set(snapshot.map(tab => tab.windowId)).size} 个窗口。未保存的页面内容可能丢失，请确认后继续。`;
+  $('#dialog-details').replaceChildren(...snapshot.map(tab => { const entry = node('div', 'confirm-item'); entry.append(node('div', '', `${tab.title || '未命名页面'}${tab.pinned ? ' · 已固定' : ''}`), node('div', 'confirm-url', address(tab))); return entry; }));
   $('#confirm-action').textContent = `确认关闭 ${snapshot.length} 个标签`;
   $('#confirm-dialog').showModal();
 }
@@ -188,6 +206,19 @@ $('#confirm-action').addEventListener('click', async () => {
   try { await performClose(action.snapshot, action.duplicates); } finally { busy = false; $('#confirm-action').disabled = false; pending = null; }
 });
 $('#confirm-dialog').addEventListener('close', () => { if (!busy) pending = null; });
+function updateSelection() {
+  $('#selection-toolbar').hidden = !selecting;
+  $('#toggle-selection').textContent = selecting ? '退出多选' : '多选';
+  $('#toggle-selection').setAttribute('aria-pressed', selecting);
+  $('#selection-count').textContent = `已选 ${selected.size} 页（含搜索隐藏项）`;
+  $('#close-selected').disabled = !selected.size;
+}
+$('#toggle-selection').addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
+$('#clear-selection').addEventListener('click', () => { selected.clear(); render(); });
+$('#close-selected').addEventListener('click', () => {
+  const snapshot = tabs.filter(tab => selected.get(tab.id) === address(tab));
+  if (snapshot.length) showConfirm(snapshot, `关闭所选的 ${snapshot.length} 个标签？`, false, null, true);
+});
 $('#review-duplicates').addEventListener('click', () => { const snapshot = duplicateSets(tabs).flatMap(set => set.remove); if (snapshot.length) showConfirm(snapshot, `清理 ${snapshot.length} 个重复标签？`, true); });
 $('#filter').addEventListener('input', () => render());
 $('#refresh').addEventListener('click', refresh);
