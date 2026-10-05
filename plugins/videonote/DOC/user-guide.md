@@ -4,7 +4,7 @@
 
 ## 安装扩展
 
-从插件合集下载 [VideoNote-0.9.6-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.6-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
+从插件合集下载 [VideoNote-0.9.7-chrome.zip](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.7-chrome.zip) 成品包，无需安装开发工具或本机组件。GitHub 的 Code → Download ZIP 仍是源码。
 
 下载后按以下步骤安装：
 

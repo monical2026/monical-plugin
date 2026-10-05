@@ -5,7 +5,7 @@
 | 插件 | 版本 | 用途 | 下载与说明 |
 | --- | --- | --- | --- |
 | Tab Haven · 标签小憩 | 1.0.1 | 新标签页 Google 搜索、网站标签管理、重复提醒、首页快捷入口、固定标签、限时恢复与多选确认关闭、静音暂停与播放恢复、单页直接切换、固定页面保护、全选搜索结果、声音与固定快捷筛选、正式图标 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/tab-haven/tab-haven-1.0.1.zip) · [使用说明](plugins/tab-haven/README.md) |
-| VideoNote | 0.9.6 | YouTube 与 B 站已有字幕、双语逐字稿、AI 梳理、笔记与导出 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.6-chrome.zip) · [使用说明](plugins/videonote/README.md) |
+| VideoNote | 0.9.7 | YouTube 与 B 站已有字幕、双语逐字稿、AI 梳理、笔记与导出 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.7-chrome.zip) · [使用说明](plugins/videonote/README.md) |
 
 ## 安装 Tab Haven
 
@@ -25,7 +25,7 @@
 - `plugins/tab-haven/`：Tab Haven 的源码、开发说明、测试与验证记录。
 - `downloads/tab-haven/`：Tab Haven 的可加载 ZIP 和 SHA-256 校验值。
 - `plugins/videonote/`：VideoNote 完整工程与开发记录。
-- `downloads/videonote/`：VideoNote 成品 ZIP（当前 0.9.6，保留历史版本） 与 SHA-256 校验值。
+- `downloads/videonote/`：VideoNote 成品 ZIP（当前 0.9.7，保留历史版本） 与 SHA-256 校验值。
 - 后续插件沿用 `plugins/<插件名>/` 与 `downloads/<插件名>/`，在本页添加入口。
 
 当前未上架 Chrome 应用商店。许可证见 [LICENSE](LICENSE)。
