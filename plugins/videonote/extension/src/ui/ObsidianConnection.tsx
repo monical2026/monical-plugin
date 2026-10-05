@@ -1,3 +1,4 @@
+import { rpc, errorText } from '../lib/rpc';
 import type { useObsidian } from './use-obsidian';
 export function ObsidianConnection({
   connection,
@@ -31,13 +32,17 @@ export function ObsidianConnection({
         <button
           disabled={busy}
           onClick={() => {
-            void navigator.clipboard
-              .writeText(chrome.runtime.id)
-              .then(() => setMessage('连接编号已复制，请粘贴到连接安装窗口。'))
-              .catch(() => setMessage(`连接编号：${chrome.runtime.id}`));
+            void rpc({ type: 'downloadObsidianConnection' })
+              .then((result) => {
+                if (result !== null)
+                  setMessage(
+                    '连接文件已提交下载。双击安装程序后，选择该 JSON 文件，无需输入或粘贴编号。',
+                  );
+              })
+              .catch((error) => setMessage(errorText(error)));
           }}
         >
-          复制安装连接编号
+          下载安装连接文件
         </button>
         {connection.state === 'appMissing' && (
           <a

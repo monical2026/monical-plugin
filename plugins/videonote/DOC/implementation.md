@@ -320,3 +320,14 @@ DeleteNoteButton 不再为 iconOnly 绕过确认；卡片垃圾桶与编辑器�
 Mac 本地构建和隔离验证不等于 Windows/Chrome 人工验收。签名、公证与 Intel Mac 包未包含，本版本已获用户授权交付插件合集，验证限制保留。
 
 本轮辅助文件：五处版本文件（根及三个工作区 package.json、extension/manifest.json）同步为 0.9.8，根 package.json 增加桌面打包命令；scripts/package-extension.mjs 更新包内说明，scripts/windows-native.mjs 支持安装器静默调用原构建逻辑；scripts/test-desktop-package.mjs 检查压缩包与隔离安装。tests/unit/obsidian-connection.test.ts 验证登记库及写入门禁，obsidian-detection.test.ts 验证应用检测，obsidian-browser-routing.test.ts 验证浏览器模式本机路由，obsidian-export-ui.test.ts 验证置灰，connector-installer.test.ts 验证注册与配置保留，browser-obsidian-connected.test.ts 改验旧入口被拒绝。README、AGENTS、PLAN、browser-mode、user-guide、changelog、test-plan、test-feedback 同步当前行为与证据；obsidian-install.md 是新安装指南唯一详细入口。
+
+## 0.9.9 文件职责与验证边界
+
+- scripts/utf8-zip.mjs、package-desktop.mjs：统一写入 UTF-8 双头与 Mac 执行位，打包新连接文件模块；test-desktop-package.mjs 核验真实包头、文件和运行权限。
+- extension/src/background/obsidian-connection-file.ts、background/index.ts、shared/src/index.ts：仅插件可信界面可请求后台生成当前扩展的连接 JSON；不接受调用方指定 ID。ObsidianConnection.tsx 改为下载按钮。
+- scripts/installer/connection-file.mjs、install.mjs、dialog.mjs：原生文件选择替代编号文本框，安全校验大小/格式/编号后才注册；取消无副作用。
+- shared/src/ai/review-indexes.ts、analysis-review-plan.ts、review-merge-warnings.ts、analysis-review.ts：检测重复/越界，拒绝整栏可疑修订并保留原条目；警告与脱敏计数可见。
+- tests/unit/connection-file.test.ts、utf8-zip.test.ts、review-indexes.test.ts：新增回归；analysis-v3.test.ts、browser-analysis.test.ts 更新为不丢原条目、不额外计费的预期并保留无效金句拒绝。
+- 五处版本清单同步 0.9.9；README、AGENTS、PLAN、changelog、obsidian-install、user-guide、analysis-content-design、test-feedback 同步流程与限制。
+
+此版本未实际复现系统文本框不可输入的原因，而是移除该交互依赖；不宣称 Windows 实机或新文件选择交互已经验收。

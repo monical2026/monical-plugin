@@ -1,3 +1,4 @@
+import { downloadObsidianConnection } from './obsidian-connection-file';
 import { firstInstall } from './first-install';
 import { browserObsidian } from './browser-obsidian';
 import { fetchCaptions } from './captions';
@@ -139,6 +140,8 @@ async function handle(
     recordChanged(removed.videoId, removed.revision);
     return true;
   }
+  if (r.type === 'downloadObsidianConnection')
+    return downloadObsidianConnection();
   if (r.type === 'downloadExport') {
     try {
       return await chrome.downloads.download({

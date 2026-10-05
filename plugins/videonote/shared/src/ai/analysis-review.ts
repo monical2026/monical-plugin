@@ -91,6 +91,15 @@ export async function reviewAnalysis(
     const input = await requestReviewPlan(material, generate, correction);
     const applied = applyReviewPlan(input, material);
     const resolved = resolveAnalysis(applied, segments);
+    for (const field of ['knowledge', 'methods'] as const) {
+      const problem = applied.indexProblems[field];
+      if (problem.invalid)
+        trace?.(`review.${field}.invalidIndexes`, { count: problem.invalid });
+      if (problem.duplicates)
+        trace?.(`review.${field}.duplicateIndexes`, {
+          count: problem.duplicates,
+        });
+    }
     if (applied.warnings.length)
       trace?.('review.merge.preserved', { count: applied.warnings.length });
     return {

@@ -7,7 +7,7 @@ export function dialog(message, input = false) {
     const script = input
       ? `text returned of (display dialog ${literal} default answer "" with title "VideoNote Obsidian 连接" buttons {"取消", "安装"} default button "安装")`
       : `display dialog ${literal} with title "VideoNote Obsidian 连接" buttons {"好"} default button "好"`;
-    result = spawnSync('/usr/bin/osascript', ['-e', script], {
+    result = spawnSync('/usr/bin/osascript', ['-e', 'activate', '-e', script], {
       encoding: 'utf8',
       timeout: 300000,
     });
@@ -24,7 +24,7 @@ export function dialog(message, input = false) {
       ),
       [
         '-NoProfile',
-        '-NonInteractive',
+        '-STA',
         '-EncodedCommand',
         Buffer.from(code, 'utf16le').toString('base64'),
       ],

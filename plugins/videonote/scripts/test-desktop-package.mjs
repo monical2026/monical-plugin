@@ -21,6 +21,21 @@ try {
     const archive = resolve(
       `artifacts/releases/VideoNote-${version}-${platform}.zip`,
     );
+    const bytes = await readFile(archive);
+    const end = bytes.length - 22;
+    let cursor = bytes.readUInt32LE(end + 16);
+    const count = bytes.readUInt16LE(end + 10);
+    for (let index = 0; index < count; index++) {
+      assert.equal(bytes.readUInt32LE(cursor), 0x02014b50);
+      assert.equal(bytes.readUInt16LE(cursor + 8) & 0x800, 0x800);
+      const local = bytes.readUInt32LE(cursor + 42);
+      assert.equal(bytes.readUInt16LE(local + 6) & 0x800, 0x800);
+      cursor +=
+        46 +
+        bytes.readUInt16LE(cursor + 28) +
+        bytes.readUInt16LE(cursor + 30) +
+        bytes.readUInt16LE(cursor + 32);
+    }
     const digest = createHash('sha256')
       .update(await readFile(archive))
       .digest('hex');
@@ -42,7 +57,9 @@ try {
       await readFile(join(extracted, '安装说明.txt'), 'utf8'),
       /检查 Obsidian 连接/,
     );
+    await stat(join(extracted, 'Obsidian 安装指南.md'));
     if (platform === 'windows-x64') {
+      await stat(join(extracted, 'connector/connection-file.mjs'));
       const command = await readFile(
         join(extracted, '安装 Obsidian 连接.cmd'),
         'ascii',
@@ -60,6 +77,7 @@ try {
     assert.ok((await stat(join(app, 'MacOS/install'))).mode & 0o100);
     run('/bin/sh', ['-n', join(app, 'MacOS/install')]);
     const resources = join(app, 'Resources');
+    await stat(join(resources, 'connection-file.mjs'));
     assert.match(
       run(join(resources, 'node'), ['--version']).stdout.toString(),
       /^v22\.23\.3/,
