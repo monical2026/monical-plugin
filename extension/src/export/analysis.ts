@@ -1,3 +1,4 @@
+import { isIncompleteReviewMergeWarning } from '../../../shared/src/ai/review-merge-warnings';
 import {
   transcriptLanguage,
   timestamp,
@@ -123,6 +124,7 @@ export function analysisBlocks(a: Analysis, segments: Segment[]): Block[] {
   }
   if (!a.methods.length)
     blocks.push({ text: '未提取到有足够具体做法的方法。' });
-  for (const text of a.warnings ?? []) blocks.push({ text });
+  for (const text of a.warnings ?? [])
+    if (!isIncompleteReviewMergeWarning(text)) blocks.push({ text });
   return blocks;
 }

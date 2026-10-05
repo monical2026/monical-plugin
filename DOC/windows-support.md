@@ -76,3 +76,10 @@ pnpm run test:windows-native
 - scripts/test-windows-native.mjs：Windows 原生自检，不在 Mac 冒充通过。
 
 原 settings 页面已超过 300 行，本轮只替换状态文案，不重排既有表单。Codex 的调用函数保留原有流式进程生命周期，系统差异提取到独立文件，避免在兼容性改动中重写已验证的任务流程。
+
+
+## 0.9.12 · 管道与检查期限修订（未做 Windows 实机验收）
+
+用户报告安装后一直检查连接。Host.cs 旧 CopyToAsync 转发未显式刷新，改为 Task.Run 启动独立双向二进制转发并逐块 Flush；保留凭据处理与来源校验。旧原生测试通过 spawnSync 先关闭输入，不能覆盖 Chrome 保持 stdin 打开等待响应的行为；现在补充 liveMessages：stdin 不关闭时先后取得两个完整响应，15 秒未响应即失败。该用例只能在 Windows 执行，macOS 包结构检查不能代替。
+
+前端检查整体 20 秒期限涵盖状态和目标读取，超时不可用、可重试，迟到结果不回填。Obsidian 独立于 AI 模式，绕开模式锁，避免挂起读请求阻塞设置或重试；不自动重复导出。安装新版前先下载连接 JSON 并退出 Chrome，运行新版安装程序后重开检查。

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  getObsidianStatus,
-  getObsidianTarget,
+  checkObsidianConnection,
   type ObsidianTarget,
 } from '../export/obsidian';
 import { errorText } from '../lib/rpc';
@@ -20,12 +19,10 @@ export function useObsidian() {
     setTarget(null);
     setDetail('');
     try {
-      const result = await getObsidianStatus();
-      const selected =
-        result.state === 'ready' ? await getObsidianTarget() : null;
+      const result = await checkObsidianConnection();
       if (current !== generation.current) return;
       setVaults(result.vaults);
-      setTarget(selected);
+      setTarget(result.target);
       setState(result.state);
     } catch (error) {
       if (current !== generation.current) return;

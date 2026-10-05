@@ -1,4 +1,7 @@
-import { isReviewMergeWarning } from '../../../shared/src/ai/review-merge-warnings';
+import {
+  isReviewMergeWarning,
+  isIncompleteReviewMergeWarning,
+} from '../../../shared/src/ai/review-merge-warnings';
 import { videoSource } from '@youtube-note/shared';
 import { AnalysisList, ClipIcon, ClipOverview } from './AnalysisFields';
 import { AnalysisDetails } from './AnalysisDetails';
@@ -148,7 +151,11 @@ export function ContentViews({
           {record?.analysis && (
             <>
               {record.analysis.warnings
-                ?.filter(isReviewMergeWarning)
+                ?.filter(
+                  (warning) =>
+                    isReviewMergeWarning(warning) &&
+                    !isIncompleteReviewMergeWarning(warning),
+                )
                 .map((warning, index) => (
                   <p className="notice" role="status" key={index}>
                     {warning}

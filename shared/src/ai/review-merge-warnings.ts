@@ -8,3 +8,7 @@ export const reviewMergeWarnings = {
 };
 export const isReviewMergeWarning = (warning: string) =>
   Object.values(reviewMergeWarnings).includes(warning);
+
+export const isIncompleteReviewMergeWarning = (warning: string) =>
+  warning === reviewMergeWarnings.knowledge ||
+  warning === reviewMergeWarnings.methods;

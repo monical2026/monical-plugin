@@ -200,7 +200,12 @@ it('全片复核采用统一规则，模型失败或旧结构不能冒充新版�
 it('新版界面省略空栏目，主要时间在标题前，补充出处折叠且有横向剪刀', () => {
   const a = resolveAnalysis(output(), segments);
   a.warnings = ['有 2 处来源或摘录不符合规则，已省略；其余内容已保留。'];
-  a.warnings = [...(a.warnings ?? []), reviewMergeWarnings.knowledge];
+  a.warnings = [
+    ...(a.warnings ?? []),
+    reviewMergeWarnings.knowledge,
+    reviewMergeWarnings.methods,
+    reviewMergeWarnings.knowledgeIndexes,
+  ];
   const record = recordSchema.parse({
     videoId: 'abcdefghijk',
     title: '测试',
@@ -234,11 +239,18 @@ it('新版界面省略空栏目，主要时间在标题前，补充出处折叠�
   expect(html).toContain('具体做法');
   expect(html).toContain('0:00–0:02');
   expect(html).not.toContain('来源或摘录不符合规则');
-  expect(html).toContain(reviewMergeWarnings.knowledge);
+  expect(html).not.toContain(reviewMergeWarnings.knowledge);
+  expect(html).not.toContain(reviewMergeWarnings.methods);
+  expect(html).toContain(reviewMergeWarnings.knowledgeIndexes);
   expect(record.analysis?.warnings).toEqual(a.warnings);
 });
 it('新版导出保留结构、合并时间和折叠来源，旧版内容不重标等级', () => {
   const a = resolveAnalysis(output(), segments);
+  a.warnings = [
+    reviewMergeWarnings.knowledge,
+    reviewMergeWarnings.methods,
+    reviewMergeWarnings.methodIndexes,
+  ];
   const record = recordSchema.parse({
     videoId: 'abcdefghijk',
     title: '测试',
@@ -251,6 +263,9 @@ it('新版导出保留结构、合并时间和折叠来源，旧版内容不重�
     exportBlocks(record, 'bilingual', ['analysis']),
     true,
   );
+  expect(text).not.toContain(reviewMergeWarnings.knowledge);
+  expect(text).not.toContain(reviewMergeWarnings.methods);
+  expect(text).toContain(reviewMergeWarnings.methodIndexes);
   expect(text).toContain('**要点**');
   expect(text).toContain('**切片价值：高**');
   expect(text).toContain('## 0:00–0:02 付费意愿');

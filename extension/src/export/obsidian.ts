@@ -86,3 +86,31 @@ export async function getObsidianStatus() {
       await rpc({ type: 'native', operation: 'obsidianStatus', payload: {} }),
     );
 }
+
+// 整个只读检查共用期限，包含后台未响应、锁等待及第二次目标读取。
+export async function checkObsidianConnection() {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const work = (async () => {
+    const status = await getObsidianStatus();
+    const target = status.state === 'ready' ? await getObsidianTarget() : null;
+    return { ...status, target };
+  })();
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new Error(
+                '检查连接超时（20 秒）。请运行最新版完整包中的“安装 Obsidian 连接”，完成后重启浏览器，再检查连接。',
+              ),
+            ),
+          20_000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
