@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 [DataContract]
 public class Request {
@@ -114,6 +115,15 @@ public class Host {
                 : new Response { cancelled = true };
         }
     }
+    // 两个方向必须独立启动；每次写入后刷新，不能等待 Chrome 关闭输入。
+    static void Forward(Stream source, Stream destination) {
+        var block = new byte[8192];
+        int length;
+        while ((length = source.Read(block, 0, block.Length)) > 0) {
+            destination.Write(block, 0, length);
+            destination.Flush();
+        }
+    }
     static int Launch(string[] args) {
         // 只接受 Chrome 传入的扩展来源；host.mjs 再核对注册的 allowed_origins。
         if (args.Length == 0 || !Regex.IsMatch(args[0], @"\Achrome-extension://[a-p]{32}/\z"))
@@ -127,13 +137,13 @@ public class Host {
         };
         using (var child = Process.Start(info)) {
             // 直接转发二进制流，不能经文本编码破坏 Native Messaging 的长度头。
-            var input = Console.OpenStandardInput().CopyToAsync(child.StandardInput.BaseStream);
+            var input = Task.Run(() => Forward(Console.OpenStandardInput(), child.StandardInput.BaseStream));
             input.ContinueWith(task => {
                 try { child.StandardInput.Close(); } catch (InvalidOperationException) { }
                 if (task.IsFaulted) { var ignored = task.Exception; }
             });
-            var output = child.StandardOutput.BaseStream.CopyToAsync(Console.OpenStandardOutput());
-            var errors = child.StandardError.BaseStream.CopyToAsync(Stream.Null);
+            var output = Task.Run(() => Forward(child.StandardOutput.BaseStream, Console.OpenStandardOutput()));
+            var errors = Task.Run(() => Forward(child.StandardError.BaseStream, Stream.Null));
             child.WaitForExit();
             output.GetAwaiter().GetResult();
             errors.GetAwaiter().GetResult();

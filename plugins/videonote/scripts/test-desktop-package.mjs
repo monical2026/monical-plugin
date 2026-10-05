@@ -69,7 +69,7 @@ try {
       assert.equal(node.subarray(0, 2).toString(), 'MZ');
       assert.match(
         await readFile(join(extracted, 'connector/Host.cs'), 'utf8'),
-        /CopyToAsync/,
+        /Task\.Run/,
       );
       continue;
     }

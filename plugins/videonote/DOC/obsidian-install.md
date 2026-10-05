@@ -1,13 +1,13 @@
 # Obsidian 连接安装指南
 
-适用于 0.9.11。连接组件仅为 Obsidian 导出提供本机检测、知识库列表和写入能力。字幕、AI 浏览器模式、普通文件下载不需要组件。
+适用于 0.9.12。连接组件仅为 Obsidian 导出提供本机检测、知识库列表和写入能力。字幕、AI 浏览器模式、普通文件下载不需要组件。
 
 ## 用户安装步骤
 
 1. 完整解压与你系统对应的 ZIP，到长期保留的位置。在 Chrome 的 `chrome://extensions` 中打开开发者模式，加载包内 `VideoNote` 文件夹。更新时覆盖原来路径并重新加载，勿卸载扩展；更换路径可能改变扩展 ID，造成原设置与笔记不可见。
 2. 在 VideoNote 的“导出”窗口点击“下载安装连接文件”，保存 `VideoNote-connection.json`。
-3. Windows 双击“安装 Obsidian 连接.cmd”；Mac 双击“安装 Obsidian 连接.app”。在系统文件选择窗口中选中刚下载的 `VideoNote-connection.json` 文件。无需输入命令、无需另装 Node.js 或 pnpm。
-4. 安装成功后，返回导出窗口，点击“检查 Obsidian 连接”。从下拉列表选择已在 Obsidian 打开过的知识库，再导出。下次自动记住目标；同一视频重复导出会先确认，再创建副本，不覆盖已有文件。
+3. Windows 更新时，下载连接文件后先完全退出 Chrome，以释放旧连接程序。Windows 双击“安装 Obsidian 连接.cmd”；Mac 双击“安装 Obsidian 连接.app”。在系统文件选择窗口中选中刚下载的 `VideoNote-connection.json` 文件。无需输入命令、无需另装 Node.js 或 pnpm。
+4. 安装成功后，重新打开 Chrome，返回导出窗口，点击“检查 Obsidian 连接”。从下拉列表选择已在 Obsidian 打开过的知识库，再导出。下次自动记住目标；同一视频重复导出会先确认，再创建副本，不覆盖已有文件。
 
 连接文件只含当前扩展编号和格式标记，不含密钥、笔记或知识库路径；只授权当前 Chrome 插件连接本机组件。每个扩展身份安装一次，重启后不用重装；组件更新后重新运行安装程序。安装仅写入当前用户目录和 Chrome 本机消息注册信息，不修改浏览器服务模式、笔记、API Key 或 Obsidian 设置。
 
@@ -31,3 +31,7 @@ Mac 包目前适用于 Apple 芯片（arm64），内含运行时和本机桥接�
 ## 开发与验证入口
 
 `pnpm run check` → `pnpm run package:extension` → `pnpm run package:desktop`。桌面打包脚本在 macOS 生成 Windows x64 与 Mac arm64 ZIP，下载并核对固定 Node 22.23.3 运行时；包内保留 Node 与 VideoNote 许可。扩展身份保持原规则，避免更换固定 manifest key 导致已有数据不可见。
+
+## 0.9.12 Windows 检查一直不结束的更新方法
+
+新版修正 Windows 桥接管道转发，必须重新运行新版包中的连接安装程序，单独刷新扩展不能替换已经安装的本机程序。先保存连接 JSON，再完全退出 Chrome，安装新版组件，重开 Chrome 检查。检查超过 20 秒会结束并显示超时提示，可重试，Obsidian 入口保持灰色；这不代表未安装 Obsidian，也不会自动重试导出或写文件。

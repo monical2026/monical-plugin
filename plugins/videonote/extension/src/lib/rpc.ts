@@ -26,6 +26,9 @@ export async function rpc(
       tabId: z.number().optional(),
     })
     .parse(input);
+  // Obsidian 始终走本机，不依赖 AI 模式锁；挂起的检测不能锁住设置或重试。
+  if (route.type === 'native' && route.operation?.startsWith('obsidian'))
+    return remote(input);
   if (route.type !== 'settings' && route.type !== 'native')
     return remote(input);
   return navigator.locks.request(
