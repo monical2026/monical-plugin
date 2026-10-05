@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Haven · 标签小憩",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "让搜索保持轻松，让标签井井有条。按网站整理标签，确认后整组关闭，手动清理重复页面。",
   "permissions": [
     "tabs",
@@ -27,5 +27,8 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "host_permissions": [
+    "https://t0.gstatic.com/*"
+  ]
 }

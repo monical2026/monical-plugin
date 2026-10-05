@@ -1,8 +1,9 @@
 import { preferences, setPreferences } from './preferences.js';
 import { api, isExtension } from './api.js';
 import { defaultShortcuts, addShortcut, homepage, openHomepage } from './shortcuts.js';
-import { bundledIcon, createIconResolver, loadWebsiteIcon, discoverWebsiteIcons } from './shortcut-icons.js';
-const icons = createIconResolver({ storage: localStorage, runtime: isExtension ? chrome.runtime : null, load: loadWebsiteIcon, discover: discoverWebsiteIcons });
+import { bundledIcon, decodeIconBlob, createBrowserIconLoader, createIconResolver, loadWebsiteIcon, discoverWebsiteIcons } from './shortcut-icons.js';
+import { createPublicIconLoader } from './public-icons.js';
+const icons = createIconResolver({ storage: localStorage, runtime: isExtension ? chrome.runtime : null, load: loadWebsiteIcon, discover: discoverWebsiteIcons, browserIcon: createBrowserIconLoader(isExtension ? chrome.runtime : null), publicIcon: createPublicIconLoader({ decode: decodeIconBlob }) });
 const key = 'tab-haven-shortcuts-v1';
 const list = document.querySelector('#shortcuts');
 const status = document.querySelector('#shortcut-status');

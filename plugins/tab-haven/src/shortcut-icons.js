@@ -1,4 +1,4 @@
-// 常用入口不使用 Chrome 历史 favicon 缓存：缺失时它会返回可加载的地球图。
+// 随包图标、已保存图片与网络发现协同工作，浏览器缓存只作为经校验的备用来源。
 const bundled = {
   'bilibili.com': 'bilibili.ico', 'douyin.com': 'douyin.ico',
   'zhihu.com': 'zhihu.ico', 'youtube.com': 'youtube.png', 'reddit.com': 'reddit.png',
@@ -22,7 +22,7 @@ export function safeIconUrl(value, base) {
 }
 export function directIconCandidates(pageUrl) {
   const safe = safeIconUrl(pageUrl);
-  return safe ? ['/favicon.ico', '/apple-touch-icon.png', '/favicon.png'].map(path => new URL(path, safe).href) : [];
+  return safe ? ['/favicon.ico', '/apple-touch-icon.png', '/favicon.png', '/favicon.svg'].map(path => new URL(path, safe).href) : [];
 }
 export function declaredIconCandidates(html, pageUrl, Parser = DOMParser) {
   const doc = new Parser().parseFromString(html, 'text/html');
@@ -35,7 +35,7 @@ function validCached(value) {
   return typeof value === 'string' && value.length <= 65536 &&
     (/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(value) || Boolean(safeIconUrl(value)));
 }
-export function createIconResolver({ storage, runtime, load, discover = async () => [], now = Date.now }) {
+export function createIconResolver({ storage, runtime, load, discover = async () => [], browserIcon = async () => null, publicIcon = async () => null, now = Date.now }) {
   const pending = new Map(), failures = new Map(), ready = new Map();
   function read() {
     try { const value = JSON.parse(storage.getItem(cacheKey)); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; }
@@ -59,27 +59,48 @@ export function createIconResolver({ storage, runtime, load, discover = async ()
       if (!refresh) return pending.get(url);
       await pending.get(url);
     }
-    if (refresh) forget(url);
+    if (refresh) { ready.delete(url); failures.delete(url); }
     if (ready.has(url)) return ready.get(url);
     if (!refresh && (failures.get(url) || 0) > now()) return null;
     const work = (async () => {
       const cached = read()[url];
-      const sources = [...new Set([validCached(cached) ? cached : null, ...candidates.filter(value => safeIconUrl(value)), ...directIconCandidates(url)].filter(Boolean))];
-      for (const source of sources) {
-        try { const result = await load(source); if (validCached(result)) { save(url, result); failures.delete(url); ready.set(url, result); return result; } }
-        catch { /* 当前来源不可用则继续尝试。 */ }
+      if (!refresh && validCached(cached)) {
+        try { const result = await load(cached); if (validCached(result)) { ready.set(url, result); return result; } }
+        catch { /* 缓存失效后继续查找。 */ }
       }
-      // 常见地址都无效时，尝试网页声明；跨域不允许时由用户重取并授权。
+      const sources = [...new Set([...candidates.filter(value => safeIconUrl(value)), ...directIconCandidates(url)].filter(Boolean))];
+      try {
+        const browser = await browserIcon(url);
+        if (validCached(browser)) { save(url, browser); ready.set(url, browser); return browser; }
+      } catch { /* 没有真实缓存图标时继续从网站取得，不把地球图视为成功。 */ }
+      async function firstAvailable(addresses) {
+        try {
+          return await Promise.any(addresses.map(async source => {
+            const result = await load(source);
+            if (!validCached(result)) throw new Error('图标无效');
+            return result;
+          }));
+        } catch { return null; }
+      }
+      const direct = await firstAvailable(sources);
+      if (direct) { save(url, direct); ready.set(url, direct); return direct; }
+      // 同一批候选并发尝试，避免四个慢地址串行阻塞后备服务。
       if (!candidates.length) {
         try {
-          for (const source of (await discover(url)).filter(value => safeIconUrl(value)).slice(0, 6)) {
-            if (sources.includes(source)) continue;
-            try { const result = await load(source); if (validCached(result)) { save(url, result); ready.set(url, result); return result; } }
-            catch { /* 继续尝试下一个声明。 */ }
-          }
-        } catch { /* 无授权或网站不可访问，保留可重试状态。 */ }
+          const declared = (await discover(url)).filter(value => safeIconUrl(value) && !sources.includes(value)).slice(0, 6);
+          const result = await firstAvailable(declared);
+          if (result) { save(url, result); ready.set(url, result); return result; }
+        } catch { /* 无授权或网站不可访问，继续尝试后备。 */ }
       }
-      forget(url); failures.set(url, now() + 60_000); return null;
+      if (refresh && validCached(cached)) {
+        try { const previous = await load(cached); if (validCached(previous)) { ready.set(url, previous); return previous; } }
+        catch { /* 旧图标也无法显示时保留记录，后续仍可重试。 */ }
+      }
+      try {
+        const result = await publicIcon(url);
+        if (validCached(result)) { save(url, result); ready.set(url, result); return result; }
+      } catch { /* 后备服务不可达时保留文字入口和重试。 */ }
+      failures.set(url, now() + 60_000); return null;
     })();
     pending.set(url, work);
     try { return await work; } finally { pending.delete(url); }
@@ -110,8 +131,7 @@ export async function loadWebsiteIcon(source) {
     if (!response.ok) throw new Error('获取失败');
     const blob = await response.blob();
     if (blob.size > 512 * 1024) throw new Error('图标过大');
-    const objectUrl = URL.createObjectURL(blob);
-    try { return rasterize(await imageLoaded(objectUrl)); } finally { URL.revokeObjectURL(objectUrl); }
+    return await decodeIconBlob(blob);
   } catch { /* 跨域图片可以展示，但不允许读取像素时只保存图标地址。 */ }
   await imageLoaded(source);
   return source;
@@ -122,4 +142,34 @@ export async function discoverWebsiteIcons(pageUrl) {
   const html = await response.text();
   if (html.length > 2_000_000) throw new Error('网页过大');
   return declaredIconCandidates(html, response.url || pageUrl);
+}
+
+// 扩展 favicon 接口会把“没有图标”返回为成功的默认图片。
+// 与保留 .invalid 域名得到的默认图比较，不能仅检查 HTTP 状态或 onload。
+export function createBrowserIconLoader(runtime, { fetchImage = fetch, decode = loadWebsiteIcon } = {}) {
+  let missing;
+  function source(pageUrl) {
+    const url = new URL(runtime.getURL('/_favicon/'));
+    url.searchParams.set('pageUrl', pageUrl); url.searchParams.set('size', '32');
+    url.searchParams.set('fallbackToHost', '1');
+    return url.href;
+  }
+  async function bytes(url) {
+    const result = await fetchImage(url, { signal: AbortSignal.timeout(3500) });
+    if (!result.ok) throw new Error('浏览器图标不可用');
+    return new Uint8Array(await result.arrayBuffer());
+  }
+  return async pageUrl => {
+    if (!runtime || !safeIconUrl(pageUrl)) return null;
+    if (!missing) missing = bytes(source('https://tab-haven-missing.invalid/')).catch(error => { missing = null; throw error; });
+    const [fallback, actual] = await Promise.all([missing, bytes(source(pageUrl))]);
+    if (actual.length === fallback.length && actual.every((byte, i) => byte === fallback[i])) return null;
+    const result = await decode(source(pageUrl));
+    return result.startsWith('data:image/png;base64,') ? result : null;
+  };
+}
+
+export async function decodeIconBlob(blob) {
+  const objectUrl = URL.createObjectURL(blob);
+  try { return rasterize(await imageLoaded(objectUrl)); } finally { URL.revokeObjectURL(objectUrl); }
 }
