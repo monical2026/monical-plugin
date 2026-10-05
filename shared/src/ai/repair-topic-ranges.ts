@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { parseAnalysisOutput } from './analysis-output';
+import { parseAnalysisOutput, analysisTopicsSchema } from './analysis-output';
+import { analysisContentRules } from './analysis-prompt';
 import { AnalysisReviewError } from './analysis-diagnostics';
 import { assertTopicCoverage, coverageInstruction } from './analysis-coverage';
 export async function repairTopicRanges(
@@ -10,12 +11,14 @@ export async function repairTopicRanges(
 ) {
   const original = parseAnalysisOutput(previous);
   const topics = original.topics.map((topic, index) => ({ index, ...topic }));
-  const prompt = `这是唯一一次章节来源范围校正，不重新生成脉络正文。${correction}
+  const prompt = `这是唯一一次章节来源校正。${correction}
 ${coverageInstruction(rows.length)}
-下面给出上一份实际主题及错误范围、完整原文。逐项核对主题含义在原文中的位置，修正范围。不能把每个主题的编号重新从 1 开始，也不能套用示例编号。不得增加、删除、调序或改写主题正文。若原主题含义无法在原文定位，返回 {"unresolved":true}，禁止猜测。
-只返回 {"topics":[{"index":0,"startId":"真实首编号","endId":"真实末编号"}]}，index 必须按原主题 0 到 ${topics.length - 1} 逐项出现一次；startId/endId 必须是本次原文编号。禁止返回其他字段。
-原主题：${JSON.stringify(topics)}
-原文：${JSON.stringify(rows)}`;
+${analysisContentRules}
+本轮只输出 topics，不输出或更改其他栏目。上一份主题可能遗漏开场、结尾或中间内容，也可能顺序或编号错误；不能假定原主题数量正确。
+先核对完整原文：遗漏内容必须补写有原文依据的主题，必要时拆分、合并或重排，并同步主题正文。禁止只把现有主题起点强改成 1 来掩盖遗漏；开场/过渡内容也应如实归入对应主题，不虚构问题、方法或价值。
+只返回 {"topics":[{"title":"据原文填写","startId":"真实首编号","endId":"真实末编号","introduction":"据该范围概述","keyPoints":["原文要点"],"problem":[],"application":[],"applicationOrigin":"讲者明确","clipVerdict":"低","clipReason":["据原文判断"]}]}。这是字段说明，不得照抄示例正文。返回按原文顺序覆盖全部输入的完整主题数组，不返回 index。若无法定位则返回 {"unresolved":true}，禁止猜测。
+原主题（仅供核对，可修正）：${JSON.stringify(topics)}
+完整原文：${JSON.stringify(rows)}`;
   const text = await generate(prompt);
   let input: unknown;
   try {
@@ -30,6 +33,16 @@ ${coverageInstruction(rows.length)}
       'topics.repair: invalid JSON',
     ]);
   }
+  // 新协议允许补齐遗漏主题；沿用正文解析契约，其他栏目只取首轮结果。
+  const replacement = z
+    .object({ topics: z.array(analysisTopicsSchema.element.strict()).min(1) })
+    .strict()
+    .safeParse(input);
+  if (replacement.success) {
+    assertTopicCoverage(replacement.data.topics, rows.length);
+    return { ...original, topics: replacement.data.topics };
+  }
+  // 兼容仅返回编号映射的模型，但仍要求同序同数量且完整覆盖。
   const parsed = z
     .object({
       topics: z.array(

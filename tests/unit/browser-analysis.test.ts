@@ -14,6 +14,7 @@ it.each([
   'valid',
   'coverage',
   'coverage-restart',
+  'coverage-missing-opening',
   'invalid-plan',
   'prerequisite-reference',
   'prerequisite-copy',
@@ -150,6 +151,26 @@ it.each([
         })),
       });
     }
+    if (scenario === 'coverage-missing-opening') {
+      const base = responses[0].topics[0];
+      responses[0].topics = [{ ...base, startId: '8', endId: '40' }];
+      responses[1].topics = [
+        { startId: '1', endId: '7' },
+        { startId: '8', endId: '40' },
+      ];
+      responses.splice(1, 0, {
+        topics: [
+          {
+            ...base,
+            title: '开场目标',
+            startId: '1',
+            endId: '7',
+            introduction: '明确本课的学习目标。',
+          },
+          ...responses[0].topics,
+        ],
+      });
+    }
     if (scenario === 'invalid-plan') {
       Object.assign(responses[1], {
         methods: [{ indexes: [0], limitations: 'PRIVATE_MODEL_TEXT' }],
@@ -181,7 +202,10 @@ it.each([
         },
       ],
     });
-    if (scenario === 'coverage-restart')
+    if (
+      scenario === 'coverage-restart' ||
+      scenario === 'coverage-missing-opening'
+    )
       record = recordSchema.parse({
         ...record,
         segments: Array.from({ length: 40 }, (_, index) => ({
@@ -271,6 +295,20 @@ it.each([
     expect(fetch).toHaveBeenCalledTimes(
       scenario.startsWith('coverage') ? 3 : 2,
     );
+    if (scenario === 'coverage-missing-opening') {
+      expect(record.analysis?.topics).toHaveLength(2);
+      expect(record.analysis?.topics[0]).toMatchObject({
+        title: '开场目标',
+        startSegmentId: 's1',
+        endSegmentId: 's7',
+        startMs: 0,
+        endMs: 7000,
+      });
+      expect(record.analysis?.topics[1]).toMatchObject({
+        startSegmentId: 's8',
+        endSegmentId: 's40',
+      });
+    }
     if (scenario === 'coverage-restart')
       expect(record.analysis?.topics[4]).toMatchObject({
         startSegmentId: 's39',
