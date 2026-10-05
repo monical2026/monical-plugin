@@ -1082,3 +1082,32 @@ progress {
   color: var(--text);
   z-index: 1;
 }
+
+.obsidian-connected p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.obsidian-vault-picker {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.export-dialog .obsidian-vault-picker label {
+  display: block;
+  white-space: nowrap;
+}
+.obsidian-vault-picker select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+}
+.obsidian-vault-picker button {
+  justify-self: start;
+}
+.obsidian-setup button {
+  margin: 0 6px 6px 0;
+}

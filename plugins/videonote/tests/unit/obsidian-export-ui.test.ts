@@ -41,7 +41,8 @@ it.each(['checking', 'unavailable', 'appMissing', 'noVaults', 'ready'])(
     const obsidian = radios[1];
     expect(obsidian.includes('disabled')).toBe(value !== 'ready');
     expect(radios[0]).not.toContain('disabled');
-    expect(html).toContain('检查 Obsidian 连接');
+    if (value === 'ready') expect(html).not.toContain('检查 Obsidian 连接');
+    else expect(html).toContain('检查 Obsidian 连接');
     expect(html).not.toContain('选择文件夹');
     if (value === 'appMissing')
       expect(html).toContain('https://obsidian.md/download');

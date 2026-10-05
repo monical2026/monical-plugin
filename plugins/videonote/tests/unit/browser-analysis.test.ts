@@ -13,6 +13,7 @@ afterEach(() => vi.unstubAllGlobals());
 it.each([
   'valid',
   'coverage',
+  'coverage-restart',
   'invalid-plan',
   'prerequisite-reference',
   'prerequisite-copy',
@@ -114,7 +115,40 @@ it.each([
     if (scenario === 'coverage') {
       const invalid = structuredClone(responses[0]);
       invalid.topics[0].startId = '2';
-      responses.unshift(invalid);
+      responses.splice(0, 1, invalid, {
+        topics: responses[0].topics.map((topic, index) => ({
+          index,
+          startId: topic.startId,
+          endId: topic.endId,
+        })),
+      });
+    }
+    if (scenario === 'coverage-restart') {
+      const base = responses[0].topics[0];
+      const ranges = [
+        [1, 10],
+        [11, 20],
+        [21, 30],
+        [31, 38],
+        [39, 40],
+      ];
+      responses[0].topics = ranges.map(([start, end], index) => ({
+        ...base,
+        title: `主题${index}`,
+        startId: String(index === 4 ? 1 : start),
+        endId: String(index === 4 ? 7 : end),
+      }));
+      responses[1].topics = ranges.map(([start, end]) => ({
+        startId: String(start),
+        endId: String(end),
+      }));
+      responses.splice(1, 0, {
+        topics: ranges.map(([start, end], index) => ({
+          index,
+          startId: String(start),
+          endId: String(end),
+        })),
+      });
     }
     if (scenario === 'invalid-plan') {
       Object.assign(responses[1], {
@@ -147,6 +181,16 @@ it.each([
         },
       ],
     });
+    if (scenario === 'coverage-restart')
+      record = recordSchema.parse({
+        ...record,
+        segments: Array.from({ length: 40 }, (_, index) => ({
+          id: `s${index + 1}`,
+          startMs: index * 1000,
+          endMs: (index + 1) * 1000,
+          original: `来源正文 ${index + 1}`,
+        })),
+      });
     const error = vi.fn();
     const actions = videoActions({
       record,
@@ -224,7 +268,16 @@ it.each([
     if (scenario.startsWith('prerequisite-'))
       expect(record.analysis?.prerequisites?.[0]).toMatchObject(prerequisite);
     expect(record.analysis?.topics[0].startSegmentId).toBe('s1');
-    expect(fetch).toHaveBeenCalledTimes(scenario === 'coverage' ? 3 : 2);
+    expect(fetch).toHaveBeenCalledTimes(
+      scenario.startsWith('coverage') ? 3 : 2,
+    );
+    if (scenario === 'coverage-restart')
+      expect(record.analysis?.topics[4]).toMatchObject({
+        startSegmentId: 's39',
+        endSegmentId: 's40',
+        startMs: 38000,
+        endMs: 40000,
+      });
     expect(fixture.chrome.runtime.sendMessage).not.toHaveBeenCalled();
   },
 );

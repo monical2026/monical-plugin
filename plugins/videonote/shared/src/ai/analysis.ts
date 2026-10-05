@@ -1,3 +1,4 @@
+import { repairTopicRanges } from './repair-topic-ranges';
 import { correctCoverage, coverageInstruction } from './analysis-coverage';
 import { analysisRules } from './analysis-prompt';
 import {
@@ -18,7 +19,13 @@ export async function analyzeSegments(
   if (!rows.length) throw new Error('没有可分析的逐字稿');
   if (JSON.stringify(rows).length > 30000)
     throw new Error('单批分析内容超出范围，请重新加载新版插件');
+  let previous: unknown;
   return correctCoverage(async (correction) => {
+    if (correction)
+      return resolveAnalysis(
+        await repairTopicRanges(previous, rows, generate, correction),
+        segments,
+      );
     const prompt = `${analysisRules}\n${coverageInstruction(rows.length)}\n${correction}\n逐字稿：${JSON.stringify(rows)}`;
     const text = await generate(prompt);
     let input: unknown;
@@ -32,6 +39,7 @@ export async function analyzeSegments(
     } catch {
       throw new Error('AI 梳理未返回有效 JSON，已有内容未覆盖，请重新整理。');
     }
+    previous = input;
     return resolveAnalysis(input, segments);
   });
 }
