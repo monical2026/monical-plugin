@@ -1,3 +1,4 @@
+import { writeUtf8Zip } from './utf8-zip.mjs';
 import {
   readFile,
   writeFile,
@@ -83,7 +84,12 @@ try {
         ? join(app, 'Contents/Resources')
         : join(root, '连接组件');
     await mkdir(resources, { recursive: true });
-    for (const file of ['install.mjs', 'dialog.mjs', 'register.mjs'])
+    for (const file of [
+      'install.mjs',
+      'dialog.mjs',
+      'register.mjs',
+      'connection-file.mjs',
+    ])
       await copyFile(join('scripts/installer', file), join(resources, file));
     await copyFile(
       'scripts/windows-native.mjs',
@@ -136,12 +142,12 @@ try {
     );
     await writeFile(
       join(root, '安装说明.txt'),
-      `VideoNote ${version} — ${platform}\n\n1. 完整解压到长期保留的位置。在 chrome://extensions 加载 VideoNote 文件夹。\n更新请覆盖原来的插件文件夹并重新加载，不要卸载，不要换路径。\n2. 在插件“导出”窗口点击“复制安装连接编号”。\n3. 双击“安装 Obsidian 连接”，把编号粘贴进窗口并确认安装。\n4. 回到插件，点击“检查 Obsidian 连接”，选择知识库后导出。\n\n无需安装 Node.js、pnpm，无需输入命令。连接组件可选，仅 Obsidian 导出需要；普通文件下载、AI 浏览器模式照常使用。\n未安装 Obsidian 时导出保持灰色，请先安装 Obsidian 并打开一个知识库后再检查。\nWindows 需系统自带的 .NET Framework 4.x，当前 Windows 实机验收待完成；Mac 包仅适用 Apple 芯片。安装包未做商业签名/公证，系统可能要求确认或拦截；不要关闭系统防护。详见 Obsidian 安装指南.md。\n`,
+      `VideoNote ${version} — ${platform}\n\n1. 完整解压到长期保留的位置。在 chrome://extensions 加载 VideoNote 文件夹。\n更新请覆盖原来的插件文件夹并重新加载，不要卸载，不要换路径。\n2. 在插件“导出”窗口点击“下载安装连接文件”。\n3. 双击“安装 Obsidian 连接”，选择刚下载的 VideoNote-connection.json 文件完成安装。\n4. 回到插件，点击“检查 Obsidian 连接”，选择知识库后导出。\n\n无需安装 Node.js、pnpm，无需输入命令。连接组件可选，仅 Obsidian 导出需要；普通文件下载、AI 浏览器模式照常使用。\n未安装 Obsidian 时导出保持灰色，请先安装 Obsidian 并打开一个知识库后再检查。\nWindows 需系统自带的 .NET Framework 4.x，当前 Windows 实机验收待完成；Mac 包仅适用 Apple 芯片。安装包未做商业签名/公证，系统可能要求确认或拦截；不要关闭系统防护。详见 Obsidian 安装指南.md。\n`,
     );
     const output = resolve(
       `artifacts/releases/VideoNote-${version}-${platform}.zip`,
     );
-    run('/usr/bin/ditto', ['-c', '-k', '--norsrc', root, output]);
+    await writeUtf8Zip(root, output);
     const data = await readFile(output);
     const sha = createHash('sha256').update(data).digest('hex');
     await writeFile(

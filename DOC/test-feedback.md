@@ -1225,3 +1225,19 @@ pnpm check 通过：类型、lint、格式、144 项单元测试及构建。Chro
 ### 0.9.8 交付授权补记
 
 用户明确要求本地 Git 提交并推送 GitHub 插件合集。按此授权交付源码、Chrome 包、Windows x64/Mac arm64 连接安装包及校验文件；Windows/Chrome 人工验收仍未完成，不将交付授权记作测试通过。
+
+## 2026-10-05 · 0.9.9 安装与脉络实测反馈修订
+
+用户证据：Windows 下载并解压后中文文件名乱码；Windows/Mac 安装窗口已打开但输入框无法输入或粘贴。脉络诊断 0.9.8 显示全篇请求 HTTP 200/model.stop，最后 `knowledge.indexes: invalid or duplicate index`；日志未带具体索引或原始输出，不能判定重复、越界或模型为什么给错。
+
+已确认打包根因：0.9.8 桌面 ZIP 的中文文件名是 UTF-8 字节，但 local/central header 无 UTF-8 标志（0x8），标准 ZIP 解码得到乱码。改为专用 UTF-8 ZIP 写入器，双头标志 0x800，保留 Mac Unix 执行位；以独立 Python zipfile 读取新包，中文文件名准确。安装输入框无法输入的系统原因未复现；移除编号输入路径，改为插件下载可信后台生成的 JSON 连接文件，再由原生文件选择框选择。文件只含格式标记和扩展 ID，拒绝无效格式、过大文件；取消不注册。Mac 激活系统窗口，Windows 使用 STA。
+
+脉络处理：无效或重复 knowledge/methods 索引导致该栏可选修订整栏拒绝，保留全部已核验原条目及出处，并明确提示未应用合并与筛选；不从错误索引推断意图，不采用部分改写，不额外调用模型。章节覆盖、来源、前置知识与金句保持严格。诊断分别记录 invalidIndexes/duplicateIndexes 数量，不记录字幕或响应正文。旧“无效关键点索引整片失败”测试按新行为改为保留原条目，并保留金句错误拒绝断言。
+
+验证：`pnpm run check` 成功，58 文件 / 331 测试，包括实际 videoActions→browser RPC→共享分析解析器、原文与来源、失败保留、导航版本等既有契约；连接文件下载→安装器解析、错误文件与取消、UTF-8 双头/权限测试通过。lint 无错误，保留已有 use-obsidian Effect ref 的一条提示。`node scripts/test-desktop-package.mjs` 成功：两个包 UTF-8 双头、ZIP CRC/SHA、中文文件存在、连接模块存在、Mac 解压执行位、自带 Node、隔离注册及 Native Messaging 状态和未授权拒绝通过。未改用户真实注册目录、知识库或服务配置。
+
+最终文件：Windows x64 34,757,258 字节，SHA256 `61d6bd34e8c8ceb60e27fe6da2bb0a7d560cdcc4f6f47780e6000c7ac3f85d71`；Mac arm64 38,584,263 字节，SHA256 `ec04b8ab1a442ce7135aab4ca070aa2c2e1db61233966352803f4add6d2749e9`。当前本地测试包，未提交推送。Windows 资源管理器解压、两系统文件选择窗口、真实 Chrome 与模型仍待用户实机验收；自动化不替代它们。
+
+### 0.9.9 交付授权补记
+
+用户明确要求本地 Git 提交并推送 GitHub 插件合集。按授权交付 0.9.9 源码、三个安装包和校验文件；Windows/Chrome 实机与真实模型复测状态仍待验收，不将推送授权记作测试通过。

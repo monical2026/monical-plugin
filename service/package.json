@@ -2,7 +2,7 @@
   "name": "@youtube-note/service",
   "private": true,
   "license": "MIT",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "type": "module",
   "dependencies": {
     "@youtube-note/shared": "workspace:*",

@@ -182,6 +182,7 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('getContext'), tabId: z.number().optional() }),
   z.object({ type: z.literal('load'), videoId: z.string() }),
   z.object({ type: z.literal('listHistory') }),
+  z.object({ type: z.literal('downloadObsidianConnection') }),
   z.object({
     type: z.literal('downloadExport'),
     filename: z

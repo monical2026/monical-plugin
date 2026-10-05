@@ -173,10 +173,16 @@ it.each([
     expect(diagnostic).not.toContain(record.segments[0].original);
     expect(diagnostic).not.toContain('PRIVATE_MODEL_TEXT');
     if (scenario === 'invalid-merge-index') {
-      expect(diagnostic).toContain(
-        'knowledge.indexes: invalid or duplicate index',
+      expect(diagnostic).toContain('review.knowledge.invalidIndexes');
+      expect(diagnostic).toContain('review.merge.preserved');
+      expect(record.analysis?.knowledge).toHaveLength(2);
+      expect(record.analysis?.knowledge?.map((k) => k.understanding)).toEqual([
+        ['含义0'],
+        ['含义1'],
+      ]);
+      expect(record.analysis?.warnings).toContain(
+        '关键点复核引用重复或越界，本次未应用关键点合并与筛选，已保留全部原条目及出处。',
       );
-      expect(record.analysis).toBeNull();
       expect(fetch).toHaveBeenCalledTimes(2);
       return;
     }

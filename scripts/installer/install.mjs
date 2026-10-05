@@ -1,3 +1,4 @@
+import { chooseConnectionFile } from './connection-file.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir, tmpdir } from 'node:os';
@@ -7,13 +8,8 @@ import { installFiles } from './register.mjs';
 import { buildWindowsNative } from './windows-native.mjs';
 const source = dirname(fileURLToPath(import.meta.url));
 async function install() {
-  const extensionId = dialog(
-    '请先在 VideoNote 的导出窗口点击“复制安装连接编号”，然后粘贴到下方。\n仅为当前用户安装连接，不修改已有笔记或服务配置。',
-    true,
-  );
+  const extensionId = await chooseConnectionFile();
   if (extensionId === null) return;
-  if (!/^[a-p]{32}$/.test(extensionId))
-    throw new Error('连接编号不正确，请从 VideoNote 导出窗口重新复制');
   let stage;
   try {
     let payload = source;

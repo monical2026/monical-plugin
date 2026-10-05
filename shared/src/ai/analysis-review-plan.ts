@@ -1,3 +1,4 @@
+import { invalidReviewIndexes } from './review-indexes';
 import { reviewMergeWarnings } from './review-merge-warnings';
 import { normalizeReviewPrerequisites } from './review-prerequisites';
 import { parseReviewPlan, AnalysisReviewError } from './analysis-diagnostics';
@@ -107,10 +108,19 @@ export function applyReviewPlan(input: unknown, data: Material) {
   );
   assertTopicCoverage(plan.topics, data.segmentCount);
   const warnings: string[] = [];
+  const knowledgeIndexes = invalidReviewIndexes(
+    data.knowledge.length,
+    plan.knowledge,
+  );
+  const methodIndexes = invalidReviewIndexes(data.methods.length, plan.methods);
+  if (knowledgeIndexes.rejected)
+    warnings.push(reviewMergeWarnings.knowledgeIndexes);
+  if (methodIndexes.rejected) warnings.push(reviewMergeWarnings.methodIndexes);
   const seenKnowledge = new Set<number>(),
     seenMethods = new Set<number>();
   return {
     formatVersion: 3,
+    indexProblems: { knowledge: knowledgeIndexes, methods: methodIndexes },
     warnings,
     summary: plan.summary,
     topics: plan.topics.map((patch) => {
@@ -147,59 +157,63 @@ export function applyReviewPlan(input: unknown, data: Material) {
       }
       return { ...base, ...patch };
     }),
-    knowledge: plan.knowledge.flatMap(({ indexes, ...patch }) => {
-      const items = select(
-        data.knowledge,
-        indexes,
-        seenKnowledge,
-        'knowledge.indexes',
-      );
-      if (
-        items.length > 1 &&
-        (!complete(patch.understanding) || !complete(patch.role))
-      ) {
-        warnings.push(reviewMergeWarnings.knowledge);
-        return items;
-      }
-      return {
-        ...items[0],
-        ...patch,
-        segmentIds: [...new Set(items.flatMap((k) => k.segmentIds))],
-        sources: items.flatMap((k) =>
-          k.sources.map((source) => ({
-            ...source,
-            label: source.label === '主要讲解' ? k.title : source.label,
-          })),
-        ),
-      };
-    }),
-    methods: plan.methods.flatMap(({ indexes, ...patch }) => {
-      const items = select(
-        data.methods,
-        indexes,
-        seenMethods,
-        'methods.indexes',
-      );
-      if (
-        items.length > 1 &&
-        (!patch.applicability?.trim() ||
-          !complete(patch.steps) ||
-          !patch.limitations)
-      ) {
-        warnings.push(reviewMergeWarnings.methods);
-        return items;
-      }
-      return {
-        ...items[0],
-        ...patch,
-        sources: items.flatMap((m) =>
-          m.sources.map((source) => ({
-            ...source,
-            label: source.label === '主要讲解' ? m.title : source.label,
-          })),
-        ),
-      };
-    }),
+    knowledge: knowledgeIndexes.rejected
+      ? data.knowledge
+      : plan.knowledge.flatMap(({ indexes, ...patch }) => {
+          const items = select(
+            data.knowledge,
+            indexes,
+            seenKnowledge,
+            'knowledge.indexes',
+          );
+          if (
+            items.length > 1 &&
+            (!complete(patch.understanding) || !complete(patch.role))
+          ) {
+            warnings.push(reviewMergeWarnings.knowledge);
+            return items;
+          }
+          return {
+            ...items[0],
+            ...patch,
+            segmentIds: [...new Set(items.flatMap((k) => k.segmentIds))],
+            sources: items.flatMap((k) =>
+              k.sources.map((source) => ({
+                ...source,
+                label: source.label === '主要讲解' ? k.title : source.label,
+              })),
+            ),
+          };
+        }),
+    methods: methodIndexes.rejected
+      ? data.methods
+      : plan.methods.flatMap(({ indexes, ...patch }) => {
+          const items = select(
+            data.methods,
+            indexes,
+            seenMethods,
+            'methods.indexes',
+          );
+          if (
+            items.length > 1 &&
+            (!patch.applicability?.trim() ||
+              !complete(patch.steps) ||
+              !patch.limitations)
+          ) {
+            warnings.push(reviewMergeWarnings.methods);
+            return items;
+          }
+          return {
+            ...items[0],
+            ...patch,
+            sources: items.flatMap((m) =>
+              m.sources.map((source) => ({
+                ...source,
+                label: source.label === '主要讲解' ? m.title : source.label,
+              })),
+            ),
+          };
+        }),
     prerequisites: select(
       data.prerequisites,
       plan.prerequisites,

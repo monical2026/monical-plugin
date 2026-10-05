@@ -324,7 +324,7 @@ it('精简复核计划合并同义条目并保留各处来源，不重复回传�
   expect(result.knowledge![0].sources).toHaveLength(1);
   expect(result.quotes).toEqual([]);
 });
-it('复核计划不能引用不存在的候选或拼接新金句', async () => {
+it('无效关键点计划保留原条目，仍拒绝拼接新金句', async () => {
   const original = resolveAnalysis(output(), segments);
   const plan = {
     summary: '总结',
@@ -334,9 +334,15 @@ it('复核计划不能引用不存在的候选或拼接新金句', async () => {
     prerequisites: [],
     quotes: [],
   };
-  await expect(
-    reviewAnalysis(original, segments, async () => JSON.stringify(plan)),
-  ).rejects.toThrow('无效条目');
+  const preserved = await reviewAnalysis(original, segments, async () =>
+    JSON.stringify(plan),
+  );
+  expect(preserved.knowledge?.map((k) => k.title)).toEqual(
+    original.knowledge?.map((k) => k.title),
+  );
+  expect(preserved.warnings).toContain(
+    '关键点复核引用重复或越界，本次未应用关键点合并与筛选，已保留全部原条目及出处。',
+  );
   await expect(
     reviewAnalysis(original, segments, async () =>
       JSON.stringify({
@@ -454,11 +460,13 @@ it.each([
     expect(result.knowledge).toEqual(material.knowledge);
     expect(result.methods).toEqual(material.methods);
     expect(result.warnings).toHaveLength(2);
-    expect(() =>
-      applyReviewPlan(
-        { ...plan, knowledge: [...plan.knowledge, { indexes: [1] }] },
-        material,
-      ),
-    ).toThrow('重复或无效');
+    const duplicated = applyReviewPlan(
+      { ...plan, knowledge: [...plan.knowledge, { indexes: [1] }] },
+      material,
+    );
+    expect(duplicated.knowledge).toEqual(material.knowledge);
+    expect(duplicated.warnings).toContain(
+      '关键点复核引用重复或越界，本次未应用关键点合并与筛选，已保留全部原条目及出处。',
+    );
   },
 );
