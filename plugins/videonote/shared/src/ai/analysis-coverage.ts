@@ -44,7 +44,10 @@ export async function correctCoverage<T>(
       if (!(second instanceof AnalysisCoverageError)) throw second;
       throw new AnalysisReviewError(
         `模型校正后仍未满足来源范围：${second.detail}。已停止，不再自动请求，已有结果保留。请复制脉络诊断以便检查。`,
-        second.issues,
+        [
+          ...error.issues.map((issue) => `initial.${issue}`),
+          ...second.issues.map((issue) => `repair.${issue}`),
+        ],
       );
     }
   }

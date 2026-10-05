@@ -203,7 +203,7 @@ it('复现 40 段第 5 主题回到 1–7：校正只改范围，保留首轮全
   expect(generate).toHaveBeenCalledTimes(2);
   expect(generate.mock.calls[1][0]).toContain('"startId":"1","endId":"7"');
   expect(generate.mock.calls[1][0]).toContain('原文 40');
-  expect(generate.mock.calls[1][0]).not.toContain('knowledge');
+  expect(generate.mock.calls[1][0]).toContain('本轮只输出 topics');
 });
 it('校正拒绝改写正文、缺失主题或重复索引，无第三次请求', async () => {
   for (const topics of [
@@ -215,6 +215,75 @@ it('校正拒绝改写正文、缺失主题或重复索引，无第三次请求'
       .fn()
       .mockResolvedValueOnce(JSON.stringify(output('2')))
       .mockResolvedValueOnce(JSON.stringify({ topics }));
+    await expect(analyzeSegments(segments, generate)).rejects.toThrow(
+      '逐项对应',
+    );
+    expect(generate).toHaveBeenCalledTimes(2);
+  }
+});
+
+it('首主题从 8 开始时允许补齐 1–7，而非把无关正文强行扩大范围', async () => {
+  const source = Array.from({ length: 40 }, (_, i) =>
+    segmentSchema.parse({
+      id: `s${i + 1}`,
+      startMs: i * 1000,
+      endMs: (i + 1) * 1000,
+      original: i < 7 ? '开场介绍课程目标' : '主体讲解实践步骤',
+    }),
+  );
+  const initial = output('8', '40');
+  initial.topics[0].title = '实践步骤';
+  const repaired = [
+    {
+      ...output('1', '7').topics[0],
+      title: '课程目标',
+      introduction: '介绍本课目标',
+    },
+    ...initial.topics,
+  ];
+  const generate = vi
+    .fn()
+    .mockResolvedValueOnce(JSON.stringify(initial))
+    .mockResolvedValueOnce(JSON.stringify({ topics: repaired }));
+  const result = await analyzeSegments(source, generate);
+  expect(result.topics).toHaveLength(2);
+  expect(result.topics[0]).toMatchObject({
+    title: '课程目标',
+    startSegmentId: 's1',
+    endSegmentId: 's7',
+  });
+  expect(result.topics[1]).toMatchObject({
+    title: '实践步骤',
+    startSegmentId: 's8',
+    endSegmentId: 's40',
+  });
+  expect(result.summary).toBe(initial.summary);
+  expect(result.knowledge).toEqual([]);
+  expect(generate).toHaveBeenCalledTimes(2);
+});
+it('完整主题校正仍漏开头时记录两次范围错误，不继续请求', async () => {
+  const generate = vi
+    .fn()
+    .mockResolvedValueOnce(JSON.stringify(output('2', '3')))
+    .mockResolvedValueOnce(JSON.stringify({ topics: output('2', '3').topics }));
+  await expect(analyzeSegments(segments, generate)).rejects.toMatchObject({
+    issues: [
+      expect.stringContaining('initial.topics.coverage'),
+      expect.stringContaining('repair.topics.coverage'),
+    ],
+  });
+  expect(generate).toHaveBeenCalledTimes(2);
+});
+it('主题校正不能替换其他栏目，也不能以缺失正文冒充完整主题', async () => {
+  for (const repair of [
+    { topics: output().topics, summary: '擅自改写' },
+    { topics: [{ title: '残缺主题', startId: '1', endId: '3' }] },
+    { unresolved: true },
+  ]) {
+    const generate = vi
+      .fn()
+      .mockResolvedValueOnce(JSON.stringify(output('2')))
+      .mockResolvedValueOnce(JSON.stringify(repair));
     await expect(analyzeSegments(segments, generate)).rejects.toThrow(
       '逐项对应',
     );

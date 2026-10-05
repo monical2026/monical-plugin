@@ -75,6 +75,8 @@ const outputSchema = z.object({
   ),
 });
 
+export const analysisTopicsSchema = outputSchema.shape.topics;
+
 const labels: Record<string, string> = {
   formatVersion: '格式版本',
   keyPoints: '要点',
