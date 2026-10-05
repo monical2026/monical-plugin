@@ -1,7 +1,10 @@
+import { AnalysisReviewError } from './analysis-diagnostics';
 // 保持连续覆盖校验；只向模型反馈来源编号，不扩写或猜测主题范围。
-export class AnalysisCoverageError extends Error {
+export class AnalysisCoverageError extends AnalysisReviewError {
   constructor(public readonly detail: string) {
-    super(`脉络主题来源范围不完整：${detail}。已有结果未覆盖。`);
+    super(`脉络主题来源范围不完整：${detail}。已有结果未覆盖。`, [
+      `topics.coverage: ${detail}`,
+    ]);
   }
 }
 export function assertTopicCoverage(
@@ -35,13 +38,13 @@ export async function correctCoverage<T>(
     if (!(error instanceof AnalysisCoverageError)) throw error;
     try {
       return await action(
-        `上次已完成的回复未通过来源编号检查：${error.detail}。这是唯一一次针对该错误的校正，请重新按原始材料生成完整结果，不重复错误。`,
+        `上次已完成的回复未通过来源编号检查：${error.detail}。这是唯一一次针对该错误的校正，请核对原始材料，并严格按本次任务指定的结构返回校正结果，不重复错误。`,
       );
     } catch (second) {
       if (!(second instanceof AnalysisCoverageError)) throw second;
-      throw new Error(
-        `模型校正后仍未满足来源范围：${second.detail}。已停止，不再自动请求，已有结果保留。请在设置中更换脉络模型后再试。`,
-        { cause: second },
+      throw new AnalysisReviewError(
+        `模型校正后仍未满足来源范围：${second.detail}。已停止，不再自动请求，已有结果保留。请复制脉络诊断以便检查。`,
+        second.issues,
       );
     }
   }
