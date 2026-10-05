@@ -5,7 +5,7 @@
 | 插件 | 版本 | 用途 | 下载与说明 |
 | --- | --- | --- | --- |
 | Tab Haven · 标签小憩 | 1.0.4 | 新标签页 Google 搜索、网站标签管理、重复提醒、首页快捷入口、固定标签、限时恢复与多选确认关闭、静音暂停与播放恢复、单页直接切换、固定页面保护、全选搜索结果、声音与固定快捷筛选、正式图标 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/tab-haven/tab-haven-1.0.4.zip) · [使用说明](plugins/tab-haven/README.md) |
-| VideoNote | 0.9.10 | YouTube 与 B 站已有字幕、双语逐字稿、AI 梳理、笔记与导出 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.10-chrome.zip) · [使用说明](plugins/videonote/README.md) |
+| VideoNote | 0.9.11 | YouTube 与 B 站已有字幕、双语逐字稿、AI 梳理、笔记与导出 | [下载安装包](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.11-chrome.zip) · [使用说明](plugins/videonote/README.md) |
 
 ## 安装 Tab Haven
 
@@ -20,7 +20,7 @@
 
 下载上表的 Chrome ZIP 并解压，在 Chrome 的 `chrome://extensions` 开启开发者模式，选择“加载已解压的扩展程序”，加载其中的 `VideoNote` 文件夹。普通使用无需 Node.js、pnpm 或本机组件；AI 功能按需配置服务。
 
-需要 Obsidian 导出时，请下载对应的完整包：[Windows x64](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.10-windows-x64.zip) · [Mac Apple 芯片](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.10-mac-arm64.zip)。完整解压并加载扩展后，从“导出”窗口点击“下载安装连接文件”，双击包内“安装 Obsidian 连接”，选择刚下载的 VideoNote-connection.json 文件完成安装，再点击“检查 Obsidian 连接”。组件或 Obsidian 不可用时入口置灰；正常后从已登记知识库选择目标。无需手输命令或另装运行时。Windows 实机验收仍待完成，Mac 包仅适用 Apple 芯片，安装程序暂未签名/公证。
+需要 Obsidian 导出时，请下载对应的完整包：[Windows x64](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.11-windows-x64.zip) · [Mac Apple 芯片](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.11-mac-arm64.zip)。完整解压并加载扩展后，从“导出”窗口点击“下载安装连接文件”，双击包内“安装 Obsidian 连接”，选择刚下载的 VideoNote-connection.json 文件完成安装，再点击“检查 Obsidian 连接”。组件或 Obsidian 不可用时入口置灰；正常后从已登记知识库选择目标。无需手输命令或另装运行时。Windows 实机验收仍待完成，Mac 包仅适用 Apple 芯片，安装程序暂未签名/公证。
 
 更新时覆盖原插件目录并重新加载，不要卸载或换路径。详细步骤见 [Obsidian 连接安装指南](plugins/videonote/DOC/obsidian-install.md) 和 [VideoNote 使用指南](plugins/videonote/DOC/user-guide.md)。
 
@@ -29,7 +29,7 @@
 - `plugins/tab-haven/`：Tab Haven 的源码、开发说明、测试与验证记录。
 - `downloads/tab-haven/`：Tab Haven 的可加载 ZIP 和 SHA-256 校验值。
 - `plugins/videonote/`：VideoNote 完整工程与开发记录。
-- `downloads/videonote/`：VideoNote 成品 ZIP（当前 0.9.10，保留历史版本） 与 SHA-256 校验值。
+- `downloads/videonote/`：VideoNote 成品 ZIP（当前 0.9.11，保留历史版本） 与 SHA-256 校验值。
 - 后续插件沿用 `plugins/<插件名>/` 与 `downloads/<插件名>/`，在本页添加入口。
 
 当前未上架 Chrome 应用商店。许可证见 [LICENSE](LICENSE)。
