@@ -1,3 +1,4 @@
+import type { AnalysisTrace } from './analysis-diagnostics';
 import { correctCoverage } from './analysis-coverage';
 import { requestReviewPlan } from './analysis-review-request';
 import { reviewStandaloneQuotes } from './quote-review';
@@ -83,11 +84,19 @@ export async function reviewAnalysis(
   analysis: Analysis,
   segments: Segment[],
   generate: (prompt: string) => Promise<string>,
+  trace?: AnalysisTrace,
 ) {
   const material = reviewMaterial(analysis, segments);
   const result = await correctCoverage(async (correction) => {
     const input = await requestReviewPlan(material, generate, correction);
-    return resolveAnalysis(applyReviewPlan(input, material), segments);
+    const applied = applyReviewPlan(input, material);
+    const resolved = resolveAnalysis(applied, segments);
+    if (applied.warnings.length)
+      trace?.('review.merge.preserved', { count: applied.warnings.length });
+    return {
+      ...resolved,
+      warnings: [...(resolved.warnings ?? []), ...applied.warnings],
+    };
   });
   if (result.formatVersion !== 3)
     throw new Error('全片复核未采用新版结构，已有结果未覆盖');

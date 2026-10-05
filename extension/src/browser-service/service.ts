@@ -94,7 +94,12 @@ export async function browserService(
         task,
         () =>
           payload.task === 'reviewAnalysis'
-            ? reviewAnalysis(payload.analysis, payload.segments, generate)
+            ? reviewAnalysis(
+                payload.analysis,
+                payload.segments,
+                generate,
+                trace,
+              )
             : analyzeSegments(payload.segments, generate),
         trace,
       );
