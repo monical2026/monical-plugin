@@ -1,0 +1,75 @@
+import type { useObsidian } from './use-obsidian';
+export function ObsidianConnection({
+  connection,
+  busy,
+  selected,
+  setMessage,
+  onChoose,
+  onRefresh,
+}: {
+  connection: ReturnType<typeof useObsidian>;
+  busy: boolean;
+  selected: boolean;
+  setMessage: (message: string) => void;
+  onChoose: (vault: string) => Promise<void>;
+  onRefresh: () => void;
+}) {
+  return (
+    <>
+      <div className="export-target">
+        <p role="status">{connection.hint}</p>
+        {connection.detail && <p className="muted">{connection.detail}</p>}
+        <button
+          disabled={busy || connection.state === 'checking'}
+          onClick={() => {
+            onRefresh();
+            void connection.refresh();
+          }}
+        >
+          检查 Obsidian 连接
+        </button>
+        <button
+          disabled={busy}
+          onClick={() => {
+            void navigator.clipboard
+              .writeText(chrome.runtime.id)
+              .then(() => setMessage('连接编号已复制，请粘贴到连接安装窗口。'))
+              .catch(() => setMessage(`连接编号：${chrome.runtime.id}`));
+          }}
+        >
+          复制安装连接编号
+        </button>
+        {connection.state === 'appMissing' && (
+          <a
+            href="https://obsidian.md/download"
+            target="_blank"
+            rel="noreferrer"
+          >
+            安装 Obsidian
+          </a>
+        )}
+      </div>
+      {selected && connection.state === 'ready' && (
+        <div className="export-target">
+          <label>
+            Obsidian 知识库
+            <select
+              disabled={busy}
+              value={connection.target?.vault ?? ''}
+              onChange={(event) => void onChoose(event.target.value)}
+            >
+              <option value="" disabled>
+                请选择知识库
+              </option>
+              {connection.vaults.map((vault) => (
+                <option key={vault.vault} value={vault.vault}>
+                  {vault.name} — {vault.folder}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+    </>
+  );
+}

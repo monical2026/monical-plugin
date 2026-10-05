@@ -1,23 +1,11 @@
-import { z } from 'zod';
-import { rememberedDirectory } from '../export/browser-directory-store';
-import {
-  browserExportSchema,
-  writeBrowserObsidian,
-} from '../export/browser-obsidian';
-export async function browserObsidian(
-  action: 'status' | 'export',
-  payload: unknown,
-) {
-  const directory = await rememberedDirectory();
-  if (action === 'status')
-    return directory ? { folder: directory.name, vault: directory.name } : null;
-  const request = browserExportSchema
-    .extend({ copy: z.boolean() })
-    .parse(payload);
-  if (
-    !directory ||
-    (await directory.queryPermission({ mode: 'readwrite' })) !== 'granted'
-  )
-    return { status: 'authorizationRequired' as const };
-  return writeBrowserObsidian(directory, request, request.copy);
+// 兼容旧请求，但不再允许目录句柄绕过本机应用检测。
+export function browserObsidian(
+  _action: 'status' | 'export',
+  _payload: unknown,
+): Promise<never> {
+  return Promise.reject(
+    new Error(
+      '浏览器目录导入已停用，请安装 Obsidian 连接组件后，在导出窗口检查连接',
+    ),
+  );
 }

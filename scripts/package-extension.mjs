@@ -57,7 +57,7 @@ entries.push({
 entries.push({
   name: '安装说明.txt',
   data: Buffer.from(
-    `VideoNote ${version}\n\n1. 解压整个 ZIP，把 VideoNote 文件夹放到长期保留的位置。\n2. Chrome 打开 chrome://extensions，开启开发者模式。\n3. 点击加载已解压的扩展程序，选择内含 manifest.json 的 VideoNote 文件夹。\n\n无需安装 Node、pnpm 或本机组件。新安装默认浏览器模式，并自动打开设置页。\n需要 AI 时打开设置，创建密码加密密钥库，填写自己的服务 API Key、测试并保存，按 Chrome 提示授权相应服务域名。重启浏览器后需解锁一次。\n旧 Mac 用户在原 extension/dist 路径重新加载可保留扩展身份和本机模式；不要卸载扩展或清理数据。\n更新时覆盖原安装文件夹并在扩展页重新加载，保留同一路径以免改变扩展 ID。\nWindows 浏览器实机验收尚待完成；本地翻译取决于 Chrome 的设备和语言能力。\nObsidian 首次连接并授权本地知识库后会记住目录，之后权限有效时直接导入；重新授权仅在浏览器要求时进行；本机 Codex 与系统钥匙串仍属于可选本机模式。\n`,
+    `VideoNote ${version}\n\n1. 解压整个 ZIP，把 VideoNote 文件夹放到长期保留的位置。\n2. Chrome 打开 chrome://extensions，开启开发者模式。\n3. 点击加载已解压的扩展程序，选择内含 manifest.json 的 VideoNote 文件夹。\n\n无需安装 Node、pnpm 或本机组件。新安装默认浏览器模式，并自动打开设置页。\n需要 AI 时打开设置，创建密码加密密钥库，填写自己的服务 API Key、测试并保存，按 Chrome 提示授权相应服务域名。重启浏览器后需解锁一次。\n旧 Mac 用户在原 extension/dist 路径重新加载可保留扩展身份和本机模式；不要卸载扩展或清理数据。\n更新时覆盖原安装文件夹并在扩展页重新加载，保留同一路径以免改变扩展 ID。\nWindows 浏览器实机验收尚待完成；本地翻译取决于 Chrome 的设备和语言能力。\nObsidian 导出需另用对应系统安装包中的连接安装程序；连接组件或 Obsidian 不可用时入口置灰。安装后点击“检查 Obsidian 连接”并选择知识库；本机 Codex 与系统钥匙串仍属于可选本机模式。\n`,
   ),
 });
 function crc32(data) {

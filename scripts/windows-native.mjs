@@ -2,7 +2,7 @@ import { access, mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
-export async function buildWindowsNative(root) {
+export async function buildWindowsNative(root, quiet = false) {
   const windows = process.env.SystemRoot || 'C:\\Windows';
   let compiler;
   for (const framework of ['Framework64', 'Framework']) {
@@ -35,7 +35,7 @@ export async function buildWindowsNative(root) {
       `/out:${output}`,
       join(root, 'service/native/windows/Host.cs'),
     ],
-    { stdio: 'inherit', windowsHide: true },
+    { stdio: quiet ? 'pipe' : 'inherit', windowsHide: true },
   );
   if (result.error || result.status !== 0)
     throw new Error('Windows 本机组件构建失败');

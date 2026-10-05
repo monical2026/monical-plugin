@@ -28,7 +28,12 @@ import { llm, translate, analyze, transcript } from './providers';
 async function handle(input: unknown): Promise<unknown> {
   const r = nativeRequestSchema.parse(input);
   if (
-    ['obsidianChoose', 'obsidianTarget', 'obsidianExport'].includes(r.operation)
+    [
+      'obsidianStatus',
+      'obsidianChoose',
+      'obsidianTarget',
+      'obsidianExport',
+    ].includes(r.operation)
   )
     return obsidian(r.operation, r.payload);
   const settings = await readSettings();

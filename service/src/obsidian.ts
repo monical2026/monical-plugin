@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { configDirectory } from './config';
-import { chooseFolder } from './folder-picker';
+import { discoverObsidian } from './obsidian-discovery';
 const targetSchema = z.object({ folder: z.string(), vault: z.string() });
 const exportSchema = z.object({
   videoId: videoIdSchema,
@@ -96,10 +96,19 @@ export async function writeObsidian(folder: string, input: unknown) {
 }
 export async function obsidian(operation: string, payload: unknown) {
   const settingsFile = join(configDirectory, 'obsidian-target.json');
+  const discovery = await discoverObsidian();
+  if (operation === 'obsidianStatus') return discovery;
+  if (discovery.state !== 'ready')
+    throw new Error(
+      discovery.state === 'appMissing'
+        ? '未检测到 Obsidian，请安装后点击“检查 Obsidian 连接”'
+        : '请先在 Obsidian 中创建或打开知识库，再检查连接',
+    );
   if (operation === 'obsidianChoose') {
-    const folder = await chooseFolder();
-    if (folder === undefined) return { cancelled: true };
-    const target = await validateTarget(folder);
+    const { vault } = z.object({ vault: z.string() }).parse(payload);
+    const target = discovery.vaults.find((item) => item.vault === vault);
+    if (!target)
+      throw new Error('知识库不在 Obsidian 已登记列表中，请重新检查连接');
     await mkdir(configDirectory, { recursive: true, mode: 0o700 });
     const temporary = join(configDirectory, `obsidian-${randomUUID()}.tmp`);
     await writeFile(temporary, JSON.stringify(target), { mode: 0o600 });
@@ -124,6 +133,14 @@ export async function obsidian(operation: string, payload: unknown) {
     throw new Error('Obsidian 目录配置无法读取，请重新选择文件夹', {
       cause: error,
     });
+  }
+  if (
+    !discovery.vaults.some(
+      (item) => item.vault === target.vault && item.folder === target.folder,
+    )
+  ) {
+    if (operation === 'obsidianTarget') return null;
+    throw new Error('原知识库已移除或位置变化，请重新选择知识库');
   }
   if (operation === 'obsidianTarget') return target;
   return writeObsidian(target.folder, payload);

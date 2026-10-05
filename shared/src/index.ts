@@ -252,6 +252,7 @@ export const requestSchema = z.discriminatedUnion('type', [
 export const nativeRequestSchema = z.object({
   id: z.string(),
   operation: z.enum([
+    'obsidianStatus',
     'obsidianChoose',
     'obsidianTarget',
     'obsidianExport',

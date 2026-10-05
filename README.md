@@ -4,7 +4,7 @@
 
 [快速开始](#快速开始) · [功能介绍](#你可以用它做什么) · [常见问题](#常见问题) · [更新日志](DOC/changelog.md)
 
-当前开发版本 **0.9.7**（合并说明不完整时保留原条目，用户已确认脉络问题解决），支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 可使用同一浏览器模式安装包；完整平台兼容性仍待验证，范围及限制见[支持范围](#支持范围)。
+当前开发版本 **0.9.8**（Obsidian 双击安装连接与应用检测，待人工验收），支持 YouTube 普通点播视频和 B 站普通 BV 视频的已有字幕。Mac 方案保留，Windows + Chrome 可使用同一浏览器模式安装包；完整平台兼容性仍待验证，范围及限制见[支持范围](#支持范围)。
 
 脉络报错时，点击提示下方或“视频脉络”页的“复制脉络诊断”，将结果提供给开发者；自动复制受限时可以从展开的文本框手动复制，无需开发者工具。诊断不含 API Key、字幕或笔记正文。
 
@@ -38,7 +38,9 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 ### 导出学习成果
 
-按需选择逐字稿、脉络和笔记，导出 Markdown、TXT、Word，或通过打印窗口另存为 PDF。浏览器模式首次连接并授权 Obsidian 文件夹后会记住知识库，后续权限有效时直接导入 Markdown，无需本机组件（0.9.4 待验收）；本机模式保留原导出路径。
+按需选择逐字稿、脉络和笔记，导出 Markdown、TXT、Word，或通过打印窗口另存为 PDF。浏览器模式与本机模式的 Obsidian 导出均需可选连接组件：双击安装后检测本机应用，从已登记知识库中选择目标。组件或软件不可用时入口置灰，详见[安装指南](DOC/obsidian-install.md)。
+
+0.9.8 的 Windows x64 与 Mac Apple 芯片测试包附带可双击的 Obsidian 连接安装程序，见[Obsidian 安装指南](DOC/obsidian-install.md)。已获用户授权交付至插件合集；Windows 实机及最终人工验收仍待完成。
 
 ## 快速开始
 
@@ -46,7 +48,7 @@ VideoNote 起初来自一个很具体的困扰：英语不够好，但想看 You
 
 准备 Chrome 和一个支持的视频。第一次建议选择有字幕的视频，先体验阅读和记录，再按需配置 AI。
 
-下载 [VideoNote-0.9.2-chrome.zip](https://github.com/monical2026/YouTube---/releases/download/v0.9.2/VideoNote-0.9.2-chrome.zip)，不需要安装 Node.js、pnpm 或本机组件。安装包已正式发布，说明见 [GitHub Release](https://github.com/monical2026/YouTube---/releases/tag/v0.9.2)。GitHub 的“Code → Download ZIP”仍是源码，不能直接加载；源码构建说明放在[开发说明](DOC/development.md)。
+下载 0.9.8 成品包：[仅 Chrome 插件](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.8-chrome.zip) · [Windows x64（含 Obsidian 连接安装器）](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.8-windows-x64.zip) · [Mac Apple 芯片（含连接安装器）](https://github.com/monical2026/monical-plugin/raw/refs/heads/main/downloads/videonote/VideoNote-0.9.8-mac-arm64.zip)。无需另装 Node.js 或 pnpm。GitHub 的“Code → Download ZIP”是源码，不能直接加载；源码构建说明见[开发说明](DOC/development.md)。
 
 ### 安装
 
