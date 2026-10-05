@@ -16,6 +16,8 @@ it.each([
   'invalid-plan',
   'prerequisite-reference',
   'prerequisite-copy',
+  'incomplete-merge',
+  'invalid-merge-index',
 ])(
   '实际视频操作经浏览器 RPC 完成分析与全片复核，范围校正=%s，完全不调用本机',
   async (scenario) => {
@@ -80,6 +82,35 @@ it.each([
         ],
       });
     }
+    if (scenario === 'incomplete-merge' || scenario === 'invalid-merge-index') {
+      const sources = [
+        { segmentId: '1', endSegmentId: '1', label: '主要讲解' },
+      ];
+      Object.assign(responses[0], {
+        knowledge: [0, 1].map((i) => ({
+          title: `关键点${i}`,
+          understanding: [`含义${i}`],
+          role: [`作用${i}`],
+          segmentIds: ['1'],
+          sources,
+        })),
+        methods: [0, 1].map((i) => ({
+          title: `方法${i}`,
+          description: '描述',
+          applicability: `条件${i}`,
+          steps: [`步骤${i}`],
+          limitations: [`限制${i}`],
+          segmentId: '1',
+          sources,
+        })),
+      });
+      Object.assign(responses[1], {
+        knowledge: [
+          { indexes: scenario === 'invalid-merge-index' ? [0, 99] : [0, 1] },
+        ],
+        methods: [{ indexes: [0, 1] }],
+      });
+    }
     if (scenario === 'coverage') {
       const invalid = structuredClone(responses[0]);
       invalid.topics[0].startId = '2';
@@ -141,6 +172,31 @@ it.each([
     expect(diagnostic).not.toContain('fixture-key');
     expect(diagnostic).not.toContain(record.segments[0].original);
     expect(diagnostic).not.toContain('PRIVATE_MODEL_TEXT');
+    if (scenario === 'invalid-merge-index') {
+      expect(diagnostic).toContain(
+        'knowledge.indexes: invalid or duplicate index',
+      );
+      expect(record.analysis).toBeNull();
+      expect(fetch).toHaveBeenCalledTimes(2);
+      return;
+    }
+    if (scenario === 'incomplete-merge') {
+      expect(record.analysis?.knowledge).toHaveLength(2);
+      expect(record.analysis?.knowledge?.map((k) => k.understanding)).toEqual([
+        ['含义0'],
+        ['含义1'],
+      ]);
+      expect(record.analysis?.methods.map((m) => m.steps)).toEqual([
+        ['步骤0'],
+        ['步骤1'],
+      ]);
+      expect(record.analysis?.methods.map((m) => m.limitations)).toEqual([
+        ['限制0'],
+        ['限制1'],
+      ]);
+      expect(record.analysis?.warnings).toHaveLength(2);
+      expect(diagnostic).toContain('review.merge.preserved');
+    }
     if (scenario === 'invalid-plan') {
       expect(diagnostic).toContain(
         'methods.[0].limitations: expected=array, actual=string',

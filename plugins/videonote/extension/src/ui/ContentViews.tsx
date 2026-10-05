@@ -1,3 +1,4 @@
+import { isReviewMergeWarning } from '../../../shared/src/ai/review-merge-warnings';
 import { videoSource } from '@youtube-note/shared';
 import { AnalysisList, ClipIcon, ClipOverview } from './AnalysisFields';
 import { AnalysisDetails } from './AnalysisDetails';
@@ -146,6 +147,13 @@ export function ContentViews({
           )}
           {record?.analysis && (
             <>
+              {record.analysis.warnings
+                ?.filter(isReviewMergeWarning)
+                .map((warning, index) => (
+                  <p className="notice" role="status" key={index}>
+                    {warning}
+                  </p>
+                ))}
               <h2 className="analysis-section-title">全片总结</h2>
               {record.analysis.summary.length <= 200 ? (
                 <p data-source-ids={record.segments.map((s) => s.id).join(' ')}>

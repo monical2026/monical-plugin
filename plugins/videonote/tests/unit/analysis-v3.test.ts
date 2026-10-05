@@ -1,3 +1,4 @@
+import { reviewMergeWarnings } from '../../shared/src/ai/review-merge-warnings';
 import { requestReviewPlan } from '../../service/src/providers/analysis-review-request';
 import { expect, it } from 'vitest';
 import { createElement } from '../../extension/node_modules/react/index.js';
@@ -199,6 +200,7 @@ it('全片复核采用统一规则，模型失败或旧结构不能冒充新版�
 it('新版界面省略空栏目，主要时间在标题前，补充出处折叠且有横向剪刀', () => {
   const a = resolveAnalysis(output(), segments);
   a.warnings = ['有 2 处来源或摘录不符合规则，已省略；其余内容已保留。'];
+  a.warnings = [...(a.warnings ?? []), reviewMergeWarnings.knowledge];
   const record = recordSchema.parse({
     videoId: 'abcdefghijk',
     title: '测试',
@@ -232,6 +234,7 @@ it('新版界面省略空栏目，主要时间在标题前，补充出处折叠�
   expect(html).toContain('具体做法');
   expect(html).toContain('0:00–0:02');
   expect(html).not.toContain('来源或摘录不符合规则');
+  expect(html).toContain(reviewMergeWarnings.knowledge);
   expect(record.analysis?.warnings).toEqual(a.warnings);
 });
 it('新版导出保留结构、合并时间和折叠来源，旧版内容不重标等级', () => {
@@ -411,3 +414,51 @@ it('长视频复核按章节和提炼条目分两次请求，保持原数组序�
     topics: [{ startId: '1', endId: '4' }],
   });
 });
+
+it.each([
+  { understanding: ['模型部分修改'] },
+  { role: ['模型部分修改'] },
+  { understanding: [], role: ['作用'] },
+  { understanding: [' '], role: ['作用'] },
+])(
+  '合并正文不完整时丢弃局部修改，保留全部原条目与各自出处 %j',
+  async (patch) => {
+    const { applyReviewPlan } =
+      await import('../../shared/src/ai/analysis-review-plan');
+    const original = output();
+    original.knowledge.push({
+      ...original.knowledge[0],
+      title: '第二个关键点',
+      understanding: ['不能丢的内容'],
+    });
+    original.methods.push({
+      ...original.methods[0],
+      title: '第二个方法',
+      limitations: ['不能丢的限制'],
+    });
+    const material = reviewMaterial(
+      resolveAnalysis(original, segments),
+      segments,
+    );
+    const plan = {
+      summary: '总结',
+      topics: [{ startId: '1', endId: '4' }],
+      knowledge: [{ indexes: [0, 1], ...patch }],
+      methods: [
+        { indexes: [0, 1], applicability: '新场景', steps: ['新步骤'] },
+      ],
+      prerequisites: [],
+      quotes: [],
+    };
+    const result = applyReviewPlan(plan, material);
+    expect(result.knowledge).toEqual(material.knowledge);
+    expect(result.methods).toEqual(material.methods);
+    expect(result.warnings).toHaveLength(2);
+    expect(() =>
+      applyReviewPlan(
+        { ...plan, knowledge: [...plan.knowledge, { indexes: [1] }] },
+        material,
+      ),
+    ).toThrow('重复或无效');
+  },
+);

@@ -1,5 +1,6 @@
 import {
   AnalysisPlanFormatError,
+  AnalysisReviewError,
   type AnalysisTrace,
 } from '../../../shared/src/ai/analysis-diagnostics';
 import { locked, store, stored } from '../browser-service/storage';
@@ -105,7 +106,10 @@ export async function withAnalysisDiagnostic(
   } catch (error) {
     report.outcome = 'failed';
     report.issues =
-      error instanceof AnalysisPlanFormatError ? error.issues : [];
+      error instanceof AnalysisPlanFormatError ||
+      error instanceof AnalysisReviewError
+        ? error.issues
+        : [];
     trace('ui.analysis.failed');
     throw error;
   } finally {

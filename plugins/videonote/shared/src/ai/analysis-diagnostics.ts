@@ -45,6 +45,14 @@ function valueType(value: unknown, nested = false): string {
   }
   return typeof value;
 }
+export class AnalysisReviewError extends Error {
+  constructor(
+    message: string,
+    public readonly issues: string[],
+  ) {
+    super(message);
+  }
+}
 export class AnalysisPlanFormatError extends Error {
   constructor(
     public readonly issues: string[],
