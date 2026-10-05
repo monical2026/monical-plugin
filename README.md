@@ -1,6 +1,6 @@
 # Tab Haven · 标签小憩
 
-当前版本：1.0.2。版本递增规则见 [AGENTS.md](AGENTS.md#版本递增规则)。
+当前版本：1.0.3。版本递增规则见 [AGENTS.md](AGENTS.md#版本递增规则)。
 
 一个把 Google 搜索与标签整理放在一起的 Chrome 新标签页插件。默认收起网站卡片，展开后可切换或关闭单页，整组关闭需要确认，重复页面只在仪表盘内提醒。
 
@@ -60,7 +60,8 @@ pnpm run build
 - `src/main.js`：界面、确认弹窗和事件刷新。
 - `src/model.js`：分组、重复检测和关闭快照校验。
 - `src/api.js`：Chrome API 与独立演示数据适配。
-- `src/presentation.js`：稳定排序、域名配色和 favicon 地址构造。
+- `src/presentation.js`：稳定排序、域名配色和标签列表 favicon 地址构造。
+- `src/shortcut-icons.js`：常用网站随包图标、网站图标发现、加载和本地缓存。
 - `src/style.css`：响应式界面样式。
 - `public/manifest.json`：Manifest V3 插件清单；Vite 构建时复制到 `dist`。
 - `tests/model.test.js`：使用 Node.js 内置测试工具验证关键逻辑。
@@ -71,13 +72,15 @@ CI/可复现安装使用 `pnpm install --frozen-lockfile`。项目使用原生 J
 
 ## 隐私与权限
 
-申请 `tabs` 权限读取标题、网址和标签状态，使用 `favicon` 权限通过 Chrome 内置接口读取网站图标。没有后台服务器、内容脚本、跟踪代码或云端同步；标签数据只在当前页面内存中处理。搜索时只将用户主动提交的查询发送给 Google，不发送标签清单。网站图标通常通过 Chrome 的扩展 favicon 接口获取；左栏 Reddit 入口使用随包的官方图标，不接入第三方图标代理；加载失败、特殊页面和普通网页演示模式使用文字占位。
+申请 `tabs` 权限读取标题、网址和标签状态，标签列表仍通过 `favicon` 权限读取 Chrome 缓存图标。没有后台服务器、跟踪代码或云端同步。搜索时只将用户主动提交的查询发送给 Google，不发送标签清单。媒体控制按需使用 `scripting` 和网站授权注入媒体监听代码，具体见静音章节。
+
+常用网站图标不依赖 Chrome 浏览历史：默认四站及 Reddit 的官方图标随插件打包。其他网站直接请求该网站的图标，必要时读取首页声明；不接入第三方图标代理、不上传标签清单。fetch 不携带凭据，图片请求不发送 Referer；图片元素仍遵循浏览器本身的 Cookie 策略。“重取图标”可按需请求当前网站的读取权限，用于发现特殊路径图标，拒绝不影响打开网站。图标会保存到本地，跨域无法读取图片时仅保存来源地址，不保证此类来源离线可用。
 
 ## GitHub 插件合集与下载
 
 本插件在 [插件合集](https://github.com/monical2026/monical-plugin) 中集中存放：源码位于 `plugins/tab-haven/`，可直接加载的压缩包位于 `downloads/tab-haven/`。本地当前目录继续作为 Tab Haven 开发目录。
 
-下载 `tab-haven-1.0.2.zip` 后先解压，打开 `chrome://extensions`，开启开发者模式，点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的 `tab-haven-1.0.2` 文件夹。安装包已经构建完成，无需安装 Node.js 或 pnpm。不要直接选择 ZIP 文件，也无需下载整个合集。
+下载 `tab-haven-1.0.3.zip` 后先解压，打开 `chrome://extensions`，开启开发者模式，点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的 `tab-haven-1.0.3` 文件夹。安装包已经构建完成，无需安装 Node.js 或 pnpm。不要直接选择 ZIP 文件，也无需下载整个合集。
 
 ## 重新打开与固定标签
 
@@ -87,7 +90,7 @@ CI/可复现安装使用 `pnpm install --frozen-lockfile`。项目使用原生 J
 - 恢复使用原始完整网址，尝试放回原窗口、原位置并保留固定状态，后台打开；原窗口不存在时在当前窗口打开。失败项保留，可再次点击重试，成功项不会重复打开。
 - 恢复记录自关闭起保留 30 分钟，最多保留最近 100 页；过期或超限自动移除记录，不影响已打开页面。列表显示剩余分钟数，恢复失败重试不延长有效期。
 - 恢复记录仅在当前仪表盘页面存活期间保留；刷新、关闭该仪表盘会清空，不跨仪表盘共享。不保证恢复网页的临时输入、滚动位置、登录后的页面状态或视频播放进度。浏览器限制打开的特殊页面可能恢复失败。
-- GitHub 合集安装包及本地 `dist/` 均为 1.0.2。
+- GitHub 合集安装包及本地 `dist/` 均为 1.0.3。
 
 固定与重新创建标签使用 [Chrome Tabs API](https://developer.chrome.com/docs/extensions/reference/api/tabs)，不新增权限。
 
@@ -148,3 +151,13 @@ CI/可复现安装使用 `pnpm install --frozen-lockfile`。项目使用原生 J
 常用网站侧栏及其管理弹窗中的 Reddit 入口使用本地图标，不依赖 Chrome 的 favicon 缓存。按 reddit.com 或其子域名识别，不按名称匹配；其他网站保留原逻辑。本地图标加载失败仍显示名称首字。无新增权限、运行时网络请求或快捷入口数据迁移。
 
 `public/site-icons/reddit.png` 来源：[Reddit 官方静态资源](https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png)，于 2026-10-05 获取，32×32 PNG，仅用于识别对应网站，商标归原权利人所有。
+
+## 1.0.3：常用网站图标不再依赖浏览历史
+
+- 默认哔哩哔哩、抖音、知乎、YouTube，以及 Reddit 均使用 `public/site-icons/` 中的官方图标；新电脑、新 Chrome 配置、首次安装和离线环境均不依赖历史缓存。
+- 添加网站立即触发同一图标解析流程，依次尝试网站自身 `/favicon.ico`、`/apple-touch-icon.png`、`/favicon.png`；失败后在 CORS 或已有授权允许时读取首页 `link rel=icon` / Apple 图标声明，支持相对路径、base 和 CDN。只处理 HTTP(S) 图片地址，不运行网页脚本。
+- 能读取的图片转为 48×48 PNG 本地保存；跨域仅能展示时缓存图片地址。最多保存 64 个图标，存储失败不阻止显示；缓存无效时重新获取。列表和管理弹窗共享请求，失败冷却 60 秒，避免反复请求。
+- 管理中可“重取图标”，只请求该网站已有声明范围内的可选权限，重新解析网页并绕过旧图标缓存。网站没有图标、拒绝图片访问或网络不可达时，显示名称首字和失败说明，可稍后重试；不能保证任何网站在任何网络条件下均有真实 Logo。
+- 默认站点无新增网络请求；通用图标仅访问用户添加的网站及其声明的图片来源。未新增必需权限，已有快捷入口、排序和侧栏偏好无需迁移。
+
+新增图标来源（2026-10-05 获取，商标归原权利人所有，仅用于识别网站）：[哔哩哔哩](https://www.bilibili.com/favicon.ico)、[抖音](https://www.douyin.com/favicon.ico)、[知乎](https://static.zhihu.com/heifetz/favicon.ico)、[YouTube](https://www.youtube.com/s/desktop/12d6b690/img/favicon_48x48.png)。Reddit 来源见 1.0.2 记录。

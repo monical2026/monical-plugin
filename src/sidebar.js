@@ -1,7 +1,8 @@
 import { preferences, setPreferences } from './preferences.js';
 import { api, isExtension } from './api.js';
 import { defaultShortcuts, addShortcut, homepage, openHomepage } from './shortcuts.js';
-import { shortcutIconSource } from './presentation.js';
+import { bundledIcon, createIconResolver, loadWebsiteIcon, discoverWebsiteIcons } from './shortcut-icons.js';
+const icons = createIconResolver({ storage: localStorage, runtime: isExtension ? chrome.runtime : null, load: loadWebsiteIcon, discover: discoverWebsiteIcons });
 const key = 'tab-haven-shortcuts-v1';
 const list = document.querySelector('#shortcuts');
 const status = document.querySelector('#shortcut-status');
@@ -41,8 +42,14 @@ function render() {
     });
     link.className = 'shortcut-link'; link.title = `${item.name} · ${item.url}`;
     const icon = document.createElement('span'); icon.className = 'shortcut-icon'; icon.textContent = item.name.slice(0, 1); icon.setAttribute('aria-hidden', 'true');
-    const src = shortcutIconSource(item.url, isExtension ? chrome.runtime : null);
-    if (src) { const img = document.createElement('img'); img.alt = ''; img.onload = () => icon.replaceChildren(img); img.src = src; }
+    icon.title = '正在获取网站图标';
+    icons.resolve(item.url).then(src => {
+      if (!src) { icon.title = '暂未取得网站图标，可在管理中重取'; return; }
+      const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer';
+      img.onload = () => { icon.replaceChildren(img); icon.title = ''; };
+      img.onerror = () => { icon.title = '图标加载失败，可在管理中重取'; icons.forget(item.url); };
+      img.src = src;
+    });
     const label = document.createElement('span'); label.textContent = item.name;
     link.append(icon); if (editing) link.append(label); row.append(link);
     if (editing) {
@@ -50,7 +57,26 @@ function render() {
       const up = button('↑', `上移 ${item.name}`, () => { const next = [...items]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; save(next); }); up.disabled = index === 0;
       const down = button('↓', `下移 ${item.name}`, () => { const next = [...items]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; save(next); }); down.disabled = index === items.length - 1;
       const remove = button('移除', `移除 ${item.name} 快捷入口`, () => { if (save(items.filter((_, i) => i !== index))) status.textContent = ''; });
-      controls.append(up, down, remove); row.append(controls);
+      controls.append(up, down);
+      if (!bundledIcon(item.url)) {
+        const retry = button('重取图标', `重新获取 ${item.name} 图标`, async () => {
+          retry.disabled = true;
+          const feedback = document.querySelector('#manage-status'); feedback.textContent = `正在获取 ${item.name} 图标…`;
+          let candidates = [], discoveryFailed = false;
+          try {
+            // request 必须直接由用户点击触发，只申请当前网站。
+            const allowed = !isExtension || await chrome.permissions.request({ origins: [`${new URL(item.url).origin}/*`] });
+            if (allowed) { try { candidates = await discoverWebsiteIcons(item.url); } catch { discoveryFailed = true; } }
+            else discoveryFailed = true;
+            const src = await icons.resolve(item.url, { candidates, refresh: true });
+            feedback.textContent = src ? '' : `${item.name} 图标暂不可用${discoveryFailed ? '（未获读取授权或网站无法访问）' : ''}，仍可正常打开网站，稍后可重试。`;
+            render();
+          } catch { feedback.textContent = '图标获取失败，请稍后重试。'; }
+          finally { retry.disabled = false; }
+        });
+        controls.append(retry);
+      }
+      controls.append(remove); row.append(controls);
     }
     target.append(row);
   }
