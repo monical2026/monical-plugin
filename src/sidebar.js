@@ -1,7 +1,7 @@
 import { preferences, setPreferences } from './preferences.js';
 import { api, isExtension } from './api.js';
 import { defaultShortcuts, addShortcut, homepage, openHomepage } from './shortcuts.js';
-import { faviconSource } from './presentation.js';
+import { shortcutIconSource } from './presentation.js';
 const key = 'tab-haven-shortcuts-v1';
 const list = document.querySelector('#shortcuts');
 const status = document.querySelector('#shortcut-status');
@@ -41,7 +41,7 @@ function render() {
     });
     link.className = 'shortcut-link'; link.title = `${item.name} · ${item.url}`;
     const icon = document.createElement('span'); icon.className = 'shortcut-icon'; icon.textContent = item.name.slice(0, 1); icon.setAttribute('aria-hidden', 'true');
-    const src = faviconSource(item.url, isExtension ? chrome.runtime : null);
+    const src = shortcutIconSource(item.url, isExtension ? chrome.runtime : null);
     if (src) { const img = document.createElement('img'); img.alt = ''; img.onload = () => icon.replaceChildren(img); img.src = src; }
     const label = document.createElement('span'); label.textContent = item.name;
     link.append(icon); if (editing) link.append(label); row.append(link);

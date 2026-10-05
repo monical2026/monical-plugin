@@ -20,3 +20,15 @@ export function faviconSource(pageUrl, runtime) {
     return url.href;
   } catch { return null; }
 }
+
+// Chrome 缓存缺失时也可能成功返回地球占位图，已知站点使用随包图标。
+export function shortcutIconSource(pageUrl, runtime) {
+  try {
+    const url = new URL(pageUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    if (url.hostname === 'reddit.com' || url.hostname.endsWith('.reddit.com')) {
+      return runtime ? runtime.getURL('/site-icons/reddit.png') : '/site-icons/reddit.png';
+    }
+    return faviconSource(pageUrl, runtime);
+  } catch { return null; }
+}
