@@ -20,11 +20,15 @@ export async function getObsidianTarget() {
       await rpc({ type: 'native', operation: 'obsidianTarget', payload: {} }),
     );
 }
-export async function chooseObsidianTarget() {
+export async function chooseObsidianTarget(vault: string) {
   const result = z
     .union([obsidianTargetSchema, z.object({ cancelled: z.literal(true) })])
     .parse(
-      await rpc({ type: 'native', operation: 'obsidianChoose', payload: {} }),
+      await rpc({
+        type: 'native',
+        operation: 'obsidianChoose',
+        payload: { vault },
+      }),
     );
   return 'cancelled' in result ? null : result;
 }
@@ -70,4 +74,15 @@ export async function sendBrowserObsidian(payload: {
       z.object({ status: z.literal('saved'), filename: z.string() }),
     ])
     .parse(await rpc({ type: 'browserObsidian', action: 'export', payload }));
+}
+
+export async function getObsidianStatus() {
+  return z
+    .object({
+      state: z.enum(['ready', 'appMissing', 'noVaults']),
+      vaults: z.array(obsidianTargetSchema.extend({ name: z.string() })),
+    })
+    .parse(
+      await rpc({ type: 'native', operation: 'obsidianStatus', payload: {} }),
+    );
 }

@@ -307,3 +307,16 @@ DeleteNoteButton 不再为 iconOnly 绕过确认；卡片垃圾桶与编辑器�
 - `extension/src/lib/rpc.ts`：记录真实运行模式并传递回调；`browser-service/service.ts`：区分分析/复核；`analysis-progress.ts`：缓存事件与新提示词缓存戳；`providers.ts`：模型返回及截断状态；`network.ts`：真实请求状态与大小，不暴露正文/请求头。
 - `tests/unit/analysis-diagnostic.test.ts`：结构/隐私/存储/并发/模板回归；`browser-analysis.test.ts`：实际调用链失败诊断；`video-actions.test.ts`：补 Chrome 环境，保留业务契约断言；`tests/browser/analysis-diagnostic.html` 和 `.tsx`：真实复制界面夹具。
 - 五个版本声明统一为 0.9.5；README、AGENTS 与相关设计、计划、指南和验证记录同步当前能力、操作步骤与待实机复测边界。
+
+## 0.9.8 · Obsidian 连接安装与检测
+
+- `service/src/obsidian-discovery.ts`：Mac/Windows 应用文件检测，Windows 协议注册路径只读取不执行；读取全局登记库，校验目录有效性。状态不以残留配置替代软件存在。
+- `service/src/obsidian.ts`、`shared/src/index.ts`、`service/src/host.ts`：新增 `obsidianStatus` 契约；选库只能从登记列表选，导出时再次检测应用及目标，保留副本保护。
+- `extension/src/ui/use-obsidian.ts`、`ObsidianConnection.tsx`、`ExportDialog.tsx`：状态检测、置灰、安装提示、重新检查和已登记库选择。分离检测与 UI，主对话框缩短至 300 行以内；主 React 组件的 JSX 仍超过 60 行，保留以呈现同一个导出表单，业务探测已独立。
+- `extension/src/export/obsidian.ts`：新增状态与选库参数。旧后台 `browser-obsidian.ts` 拒绝目录导出请求，旧独立页只显示迁移说明，不清理用户原目录句柄或文件。
+- `scripts/installer/`：安装对话框、仅当前用户注册、自带 Node 与桥接程序复制；Windows 自动使用系统 .NET Framework，保留原配置和精确扩展来源。没有更换 manifest key。
+- `scripts/package-desktop.mjs`：核对 Node 官方 SHA-256，生成 Windows x64、Mac arm64 ZIP 和校验文件，附带用户指南与许可。各平台差异集中在此脚本；安装器安装过程超过 60 行是顺序执行的一次性复制/注册事务，不引入跨步骤隐式状态。
+
+Mac 本地构建和隔离验证不等于 Windows/Chrome 人工验收。签名、公证与 Intel Mac 包未包含，本版本已获用户授权交付插件合集，验证限制保留。
+
+本轮辅助文件：五处版本文件（根及三个工作区 package.json、extension/manifest.json）同步为 0.9.8，根 package.json 增加桌面打包命令；scripts/package-extension.mjs 更新包内说明，scripts/windows-native.mjs 支持安装器静默调用原构建逻辑；scripts/test-desktop-package.mjs 检查压缩包与隔离安装。tests/unit/obsidian-connection.test.ts 验证登记库及写入门禁，obsidian-detection.test.ts 验证应用检测，obsidian-browser-routing.test.ts 验证浏览器模式本机路由，obsidian-export-ui.test.ts 验证置灰，connector-installer.test.ts 验证注册与配置保留，browser-obsidian-connected.test.ts 改验旧入口被拒绝。README、AGENTS、PLAN、browser-mode、user-guide、changelog、test-plan、test-feedback 同步当前行为与证据；obsidian-install.md 是新安装指南唯一详细入口。

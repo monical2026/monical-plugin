@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": ">=22.12"
@@ -18,7 +18,8 @@
     "test:unit": "vitest run tests/unit",
     "test:windows-native": "node scripts/test-windows-native.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:unit && pnpm build",
-    "native:install": "node scripts/install-native.mjs"
+    "native:install": "node scripts/install-native.mjs",
+    "package:desktop": "node scripts/package-desktop.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
